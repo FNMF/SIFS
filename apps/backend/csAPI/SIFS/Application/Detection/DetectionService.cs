@@ -2,7 +2,7 @@
 
 namespace SIFS.Application.Detection
 {
-    public class DetectionService
+    public class DetectionService : IDetectionService
     {
         private readonly IEnumerable<IAiService> _services;
 
@@ -20,7 +20,7 @@ namespace SIFS.Application.Detection
 
             var tasks = services.Select(x => x.DetectAsync(imagePath));
 
-            var results = await Task.WhenAll(tasks);
+            var results = await System.Threading.Tasks.Task.WhenAll(tasks);
 
             return results.ToList();
         }

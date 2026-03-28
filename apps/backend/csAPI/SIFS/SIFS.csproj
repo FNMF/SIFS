@@ -17,10 +17,10 @@
 
   <ItemGroup>
     <Folder Include="Api\" />
-    <Folder Include="Domain\" />
     <Folder Include="Infrastructure\Database\" />
     <Folder Include="Infrastructure\Persistence\Models\" />
     <Folder Include="Infrastructure\Repositories\" />
+    <Folder Include="Infrastructure\TaskLite\" />
     <Folder Include="Shared\Extensions\" />
   </ItemGroup>
 
