@@ -74,7 +74,7 @@ namespace SIFS.Application.Task
 
         private async System.Threading.Tasks.Task HandleAlgoTaskCompleted(AlgoTask algoTask)
         {
-            /*var task = await _taskRepository.GetById(algoTask.TaskId);
+            var task = await _taskRepository.GetById(algoTask.TaskId);
 
             var isCompleted = task.OnAlgoTaskCompleted();
 
@@ -84,7 +84,7 @@ namespace SIFS.Application.Task
             {
                 // 在这里处理“任务完成”
                 await OnTaskCompleted(task);
-            }*/
+            }
         }
     }
 }
