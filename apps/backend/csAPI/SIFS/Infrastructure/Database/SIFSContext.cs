@@ -27,6 +27,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<TaskTypeMap> TaskTypeMaps { get; set; }
 
+    public virtual DbSet<User> Users { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseMySql("server=localhost;database=sifs;user id=root;password=123456", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.41-mysql"));
@@ -64,6 +66,7 @@ public partial class SIFSContext : DbContext
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
             entity.Property(e => e.Id).IsFixedLength();
+            entity.Property(e => e.UserId).IsFixedLength();
         });
 
         modelBuilder.Entity<TaskTypeMap>(entity =>
@@ -72,6 +75,13 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.TaskId).IsFixedLength();
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.Property(e => e.Id).IsFixedLength();
         });
 
         OnModelCreatingPartial(modelBuilder);

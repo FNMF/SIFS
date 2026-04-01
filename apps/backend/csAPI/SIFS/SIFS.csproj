@@ -24,12 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Api\" />
-    <Folder Include="Infrastructure\Database\" />
     <Folder Include="Infrastructure\Persistence\Models\" />
-    <Folder Include="Infrastructure\Repositories\" />
-    <Folder Include="Infrastructure\TaskLite\" />
-    <Folder Include="Shared\Extensions\" />
   </ItemGroup>
 
 </Project>

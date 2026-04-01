@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,8 +12,12 @@ public partial class TaskList
     [Key]
     [Column("id")]
     [MaxLength(16)]
-    public byte[] Id { get; set; } = null!;
+    public Guid Id { get; set; }
 
     [Column("status")]
     public int Status { get; set; }
+
+    [Column("user_id")]
+    [MaxLength(16)]
+    public Guid UserId { get; set; }
 }

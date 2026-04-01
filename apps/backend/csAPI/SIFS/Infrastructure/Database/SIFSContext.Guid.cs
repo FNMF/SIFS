@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SIFS.Infrastructure.Database
 {
-    public partial class SIFSContext
+    public partial class SIFSContext:DbContext
     {
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
         {

@@ -6,23 +6,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SIFS.Infrastructure.Persistence.Models;
 
-[Table("localfile")]
-public partial class Localfile
+[Table("user")]
+public partial class User
 {
     [Key]
     [Column("id")]
     [MaxLength(16)]
     public Guid Id { get; set; }
 
-    [Column("url_local")]
+    [Column("password_hashed")]
     [StringLength(255)]
-    public string UrlLocal { get; set; } = null!;
+    public string PasswordHashed { get; set; } = null!;
 
-    [Column("url_cloud")]
+    [Column("salt")]
     [StringLength(255)]
-    public string? UrlCloud { get; set; }
+    public string Salt { get; set; } = null!;
 
-    [Column("algo_task_id")]
+    [Column("account")]
     [StringLength(255)]
-    public string AlgoTaskId { get; set; } = null!;
+    public string Account { get; set; } = null!;
 }
