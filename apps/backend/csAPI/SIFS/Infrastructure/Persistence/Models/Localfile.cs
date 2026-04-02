@@ -23,6 +23,9 @@ public partial class Localfile
     public string? UrlCloud { get; set; }
 
     [Column("algo_task_id")]
-    [StringLength(255)]
-    public string AlgoTaskId { get; set; } = null!;
+    [MaxLength(16)]
+    public Guid AlgoTaskId { get; set; }
+
+    [Column("sid")]
+    public int Sid { get; set; }
 }
