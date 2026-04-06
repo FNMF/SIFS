@@ -86,7 +86,7 @@ namespace SIFS
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(
-        Path.Combine(Directory.GetCurrentDirectory(), "Files")),
+        Path.Combine(builder.Environment.ContentRootPath, "Files")),
                 RequestPath = "/Files"
             });
 
