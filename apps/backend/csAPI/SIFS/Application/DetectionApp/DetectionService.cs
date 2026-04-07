@@ -1,6 +1,6 @@
 ﻿using SIFS.Infrastructure.External;
 
-namespace SIFS.Application.Detection
+namespace SIFS.Application.DetectionApp
 {
     public class DetectionService : IDetectionService
     {
@@ -20,7 +20,7 @@ namespace SIFS.Application.Detection
 
             var tasks = services.Select(x => x.DetectAsync(imagePath));
 
-            var results = await System.Threading.Tasks.Task.WhenAll(tasks);
+            var results = await Task.WhenAll(tasks);
 
             return results.ToList();
         }

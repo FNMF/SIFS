@@ -28,4 +28,10 @@ public partial class Localfile
 
     [Column("sid")]
     public int Sid { get; set; }
+
+    [Column("created_at", TypeName = "datetime")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at", TypeName = "datetime")]
+    public DateTime UpdatedAt { get; set; }
 }

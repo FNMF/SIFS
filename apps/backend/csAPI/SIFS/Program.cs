@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using SIFS.Infrastructure;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
 using SIFS.Shared.Extensions.EventBus;
@@ -55,8 +56,8 @@ namespace SIFS
             )
         };
     });
+            builder.Services.AddHttpContextAccessor();
 
-        
             builder.Services.Configure<AiServiceOptions>(
     builder.Configuration.GetSection("AiServices"));
 
@@ -74,6 +75,11 @@ namespace SIFS
                         type.Name.EndsWith("Service") || type.Name.EndsWith("Repository") || type.Name.EndsWith("Factory")))
                             .AsImplementedInterfaces()
                             .WithScopedLifetime());
+
+            builder.Services.AddSingleton<AlgoTaskQueue>();
+            builder.Services.AddSingleton<IAlgoTaskQueue>(sp => sp.GetRequiredService<AlgoTaskQueue>());
+
+            builder.Services.AddHostedService<AlgoTaskWorker>();
 
             var app = builder.Build();
 

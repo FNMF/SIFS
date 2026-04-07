@@ -1,5 +1,4 @@
 ﻿using SIFS.Api.Identity;
-using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Results;
@@ -13,7 +12,7 @@ namespace SIFS.Application.Identity
         {
             _userRepository = userRepository;
         }
-
+        /*
         public async Task<Result<UserReadDto>> CreateUserAsync(UserRegisterDto userCreateDto)
         {
             var existingUserResult = await _userRepository.GetUserByAccountAsync(userCreateDto.Account);
@@ -34,6 +33,6 @@ namespace SIFS.Application.Identity
                 Account = result.Data.Account
             };
             return Result<UserReadDto>.Success(userReadDto);
-        }
+        }*/
     }
 }

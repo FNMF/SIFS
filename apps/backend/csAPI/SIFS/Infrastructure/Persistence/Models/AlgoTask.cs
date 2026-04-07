@@ -17,4 +17,10 @@ public partial class AlgoTask
     [Column("task_id")]
     [MaxLength(16)]
     public Guid TaskId { get; set; }
+
+    [Column("created_at", TypeName = "datetime")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at", TypeName = "datetime")]
+    public DateTime UpdatedAt { get; set; }
 }

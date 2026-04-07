@@ -1,11 +1,12 @@
 ﻿using SIFS.Domain.Enum;
 using SIFS.Infrastructure.External;
+using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Results;
 
 namespace SIFS.Domain.Entities
 {
-    public class AlgoTask
+    public class TaskItem
     {
         public Guid Id { get; private set; } = UuidV7.NewUuidV7();
         public Guid TaskId { get; private set; }
@@ -17,13 +18,23 @@ namespace SIFS.Domain.Entities
         public DateTime UpdatedAt { get; private set; }
         public Result<List<DetectionResult>>? Result { get; private set; }
 
-        public AlgoTask(Guid taskId, string url, List<AiServiceType> types)
+        public TaskItem(Guid taskId, string url, List<AiServiceType> types)
         {
             TaskId = taskId;
             Url = url;
             Types = types;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
+        }
+        public AlgoTask ToEneity()
+        {
+            return new AlgoTask
+            {
+                Id = Id,
+                TaskId = TaskId,
+                CreatedAt = CreatedAt,
+                UpdatedAt = UpdatedAt
+            };
         }
         public void MarkAsRunning()
         {

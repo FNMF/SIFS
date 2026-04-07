@@ -20,4 +20,10 @@ public partial class TaskList
     [Column("user_id")]
     [MaxLength(16)]
     public Guid UserId { get; set; }
+
+    [Column("created_at", TypeName = "datetime")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at", TypeName = "datetime")]
+    public DateTime UpdatedAt { get; set; }
 }

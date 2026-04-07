@@ -7,7 +7,7 @@ namespace SIFS.Infrastructure.Repositories
     {
         Task<Result<Localfile>> GetLocalfileByIdAsync(Guid id);
         Task<Result<List<Localfile>>> GetLocalfilesByAlgoTaskIdAsync(Guid algoId);
-        Task<Result<Localfile>> CreateLocalfileAsync(Localfile localfile);
+        Task CreateLocalfileAsync(Localfile localfile);
         Task<Result<List<Localfile>>> CreateLocalfilesAsync(List<Localfile> localfiles);
     }
 }

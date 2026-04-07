@@ -1,5 +1,4 @@
 ﻿using DotNetEnv;
-using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Shared.Helpers;
 
 namespace SIFS.Infrastructure

@@ -1,6 +1,6 @@
 ﻿using SIFS.Infrastructure.External;
 
-namespace SIFS.Application.Detection
+namespace SIFS.Application.DetectionApp
 {
     public interface IDetectionService
     {

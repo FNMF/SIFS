@@ -1,4 +1,5 @@
 ﻿using SIFS.Infrastructure.External;
+using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Shared.Helpers;
 
 namespace SIFS.Domain.Entities
@@ -10,6 +11,8 @@ namespace SIFS.Domain.Entities
         public int Status { get; private set; } = 0;        // 复合任务，值对应完成的子任务数量，初始为0，完成时为Urls.Count
         public bool IsCompleted => Status == Urls.Count;
         public List<string> Urls { get; private set; } = new();   // 复合任务，包含多个URL   
+        public DateTime CreatedAt { get; private set; }
+        public DateTime UpdatedAt { get; private set; }
         public List<AiServiceType> Types { get; private set; }
 
         public DetectionTask(Guid userid, List<string> urls, List<AiServiceType> types)
@@ -17,10 +20,23 @@ namespace SIFS.Domain.Entities
             UserId = userid;                                                                                                                                                                 
             Urls = urls;
             Types = types;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
         }
-        public List<AlgoTask> GenerateAlgoTasks()
+        public TaskList ToEntity()
         {
-            return Urls.Select(url => new AlgoTask(Id, url, Types)).ToList();
+            return new TaskList
+            {
+                Id = Id,
+                UserId = UserId,
+                Status = Status,
+                CreatedAt = CreatedAt,
+                UpdatedAt = UpdatedAt,
+            };
+        }
+        public List<TaskItem> GenerateAlgoTasks()
+        {
+            return Urls.Select(url => new TaskItem(Id, url, Types)).ToList();
         }
         public bool OnAlgoTaskCompleted()
         {

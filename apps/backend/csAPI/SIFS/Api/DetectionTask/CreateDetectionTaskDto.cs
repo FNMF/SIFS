@@ -1,8 +1,11 @@
-﻿namespace SIFS.Api.DetectionTask
+﻿using SIFS.Infrastructure.External;
+
+namespace SIFS.Api.DetectionTask
 {
     public class CreateDetectionTaskDto
     {
         public List<ImageInputDto> Images { get; set; }
+        public List<AiServiceType> Types { get; set; }
         public class ImageInputDto
         {
             public int Order { get; set; }

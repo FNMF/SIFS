@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SIFS.Application.DetectionTaskApp;
 using SIFS.Infrastructure.Identity;
 
 namespace SIFS.Api.DetectionTask
@@ -8,35 +9,29 @@ namespace SIFS.Api.DetectionTask
     public class DetectionTaskController:ControllerBase
     {
         private readonly ICurrentService _currentService;
-        public DetectionTaskController(ICurrentService currentService)
+        private readonly IDetectionTaskAppService _detectionTaskAppService;
+        public DetectionTaskController(ICurrentService currentService, IDetectionTaskAppService detectionTaskAppService)
         {
             _currentService = currentService;
+            _detectionTaskAppService = detectionTaskAppService;
         }
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CreateDetectionTaskDto dto)
         {
-            if (dto.Images == null || !dto.Images.Any())
-                throw new Exception("至少上传一张图片");
-
-            // 防重复
-            if (dto.Images.Select(x => x.Order).Distinct().Count() != dto.Images.Count)
-                throw new Exception("排序重复");
-
-            //重排
-            var normalized = dto.Images
-                .OrderBy(x => x.Order)
-                .Select((x, i) => new { x.File, Order = i });
-
             var uuid = _currentService.RequiredUuid;
 
-
-
+            var result = await _detectionTaskAppService.CreateAsync(dto, uuid);
+            if(result.IsSuccess)
+                return Ok(result.Data);
+            else
+                return BadRequest(result.Message);
         }
+        /*
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var uuid = _currentService.RequiredUuid;
-        }
-
+        }*/
+        
     }
 }

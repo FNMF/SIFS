@@ -1,20 +1,18 @@
 ﻿using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.Persistence.Models;
-using SIFS.Shared.Results;
 
 namespace SIFS.Infrastructure.Repositories
 {
-    public class AlgoTaskRepository: IAlgoTaskRepository
+    public class TaskListRepository: ITaskListRepository
     {
         private readonly SIFSContext _context;
-        public AlgoTaskRepository(SIFSContext context)
+        public TaskListRepository(SIFSContext context)
         {
             _context = context;
         }
-
-        public async Task InsertAsync(AlgoTask algoTask)
+        public async Task InsertAsync(TaskList taskList)
         {
-            await _context.AlgoTasks.AddAsync(algoTask);
+            await _context.TaskLists.AddAsync(taskList);
             await _context.SaveChangesAsync();
         }
     }

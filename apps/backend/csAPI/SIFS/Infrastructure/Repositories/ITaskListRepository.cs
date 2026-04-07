@@ -2,8 +2,8 @@
 
 namespace SIFS.Infrastructure.Repositories
 {
-    public interface IAlgoTaskRepository
+    public interface ITaskListRepository
     {
-        Task InsertAsync(AlgoTask algoTask);
+        Task InsertAsync(TaskList taskList);
     }
 }
