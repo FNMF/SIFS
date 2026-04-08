@@ -26,14 +26,15 @@ namespace SIFS.Domain.Entities
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
-        public AlgoTask ToEneity()
+        public AlgoTask ToEntity()
         {
             return new AlgoTask
             {
                 Id = Id,
                 TaskId = TaskId,
                 CreatedAt = CreatedAt,
-                UpdatedAt = UpdatedAt
+                UpdatedAt = UpdatedAt,
+                Status = (int)Status,
             };
         }
         public void MarkAsRunning()

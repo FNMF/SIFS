@@ -1,4 +1,4 @@
-﻿using SIFS.Application.DetectionTaskApp;
+﻿using SIFS.Application.AlgoTaskApp;
 
 namespace SIFS.Infrastructure
 {
@@ -22,11 +22,11 @@ namespace SIFS.Infrastructure
                 using var scope = _scopeFactory.CreateScope();
 
                 var appService = scope.ServiceProvider
-                    .GetRequiredService<IDetectionTaskAppService>();
+                    .GetRequiredService<IAlgoTaskAppService>();
 
                 try
                 {
-                    // await appService.ExecuteAsync(taskId);
+                    await appService.ExecuteAsync(taskId);
                 }
                 catch (Exception ex)
                 {

@@ -23,4 +23,7 @@ public partial class AlgoTask
 
     [Column("updated_at", TypeName = "datetime")]
     public DateTime UpdatedAt { get; set; }
+
+    [Column("status")]
+    public int Status { get; set; }
 }

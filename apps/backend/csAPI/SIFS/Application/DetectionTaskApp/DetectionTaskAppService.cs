@@ -68,7 +68,7 @@ namespace SIFS.Application.DetectionTaskApp
                 for (int i = 0; i < algoTasks.Count; i++)
                 {
                     var task = algoTasks[i];
-                    await _algoTaskRepo.InsertAsync(task.ToEneity());
+                    await _algoTaskRepo.InsertAsync(task.ToEntity());
 
                     var localFile = new Localfile
                     {
