@@ -37,11 +37,11 @@ namespace SIFS.Application.AlgoTaskApp
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
 
                 // 调用 AI
-                var results = await _detectionService
-                    .DetectSelected(task.Url, task.Types);
+                var result = await _detectionService
+                    .DetectSelected(task.Url, task.Type);
 
                 // 标记完成
-                task.MarkAsDone(results);
+                task.MarkAsDone(result);
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
 
                 // 更新父任务

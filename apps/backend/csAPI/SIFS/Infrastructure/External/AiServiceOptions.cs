@@ -2,10 +2,6 @@
 {
     public class AiServiceOptions
     {
-        public string Sfnet { get; set; }
-
-        public string EdgeDetector { get; set; }
-
-        public string FrequencyAnalyzer { get; set; }
+        public Dictionary<AiServiceType, string> Endpoints { get; set; } = new();
     }
 }

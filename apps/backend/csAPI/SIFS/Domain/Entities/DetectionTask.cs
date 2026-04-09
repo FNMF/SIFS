@@ -36,7 +36,7 @@ namespace SIFS.Domain.Entities
         }
         public List<TaskItem> GenerateAlgoTasks()
         {
-            return Urls.Select(url => new TaskItem(Id, url, Types)).ToList();
+            return Urls.SelectMany(url => Types.Select(type => new TaskItem(Id, url, type))).ToList();
         }
         public bool OnAlgoTaskCompleted()
         {

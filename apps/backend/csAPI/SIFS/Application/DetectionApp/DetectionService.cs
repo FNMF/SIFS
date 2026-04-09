@@ -4,25 +4,22 @@ namespace SIFS.Application.DetectionApp
 {
     public class DetectionService : IDetectionService
     {
-        private readonly IEnumerable<IAiService> _services;
+        private readonly IAiService _service;
 
-        public DetectionService(IEnumerable<IAiService> services)
+        public DetectionService(IAiService service)
         {
-            _services = services;
+            _service = service;
         }
 
-        public async Task<List<DetectionResult>> DetectSelected(
+        public async Task<DetectionResult> DetectSelected(
             string imagePath,
-            List<AiServiceType> types)
+            AiServiceType type)
         {
-            var services = _services
-                .Where(x => types.Contains(x.Type));
+            var result = await _service.DetectAsync(type,imagePath);
 
-            var tasks = services.Select(x => x.DetectAsync(imagePath));
+            // 持久化结果到数据库
 
-            var results = await Task.WhenAll(tasks);
-
-            return results.ToList();
+            return result;
         }
     }
 }

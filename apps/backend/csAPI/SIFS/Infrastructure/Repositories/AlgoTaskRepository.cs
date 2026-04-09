@@ -76,7 +76,7 @@ namespace SIFS.Infrastructure.Repositories
             var type = Enum.Parse<AiServiceType>(algoType.Name, true);
 
             // 构建 TaskItem
-            var task = new TaskItem(entity.TaskId, localFile.UrlLocal, new List<AiServiceType> { type });
+            var task = new TaskItem(entity.TaskId, localFile.UrlLocal, type );
 
             // 回填基础字段
             typeof(TaskItem).GetProperty("Id")!.SetValue(task, entity.Id);
@@ -93,7 +93,7 @@ namespace SIFS.Infrastructure.Repositories
                     task.MarkAsRunning();
                     break;
                 case AlgoTaskStatus.done:
-                    task.MarkAsDone(new List<DetectionResult>()); // 占位
+                    task.MarkAsDone(new DetectionResult()); // 占位
                     break;
                 case AlgoTaskStatus.failed:
                     task.MarkAsFailed();

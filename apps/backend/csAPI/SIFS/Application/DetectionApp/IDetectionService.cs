@@ -4,8 +4,8 @@ namespace SIFS.Application.DetectionApp
 {
     public interface IDetectionService
     {
-        Task<List<DetectionResult>> DetectSelected(
+        Task<DetectionResult> DetectSelected(
             string imagePath,
-            List<AiServiceType> types);
+            AiServiceType type);
     }
 }

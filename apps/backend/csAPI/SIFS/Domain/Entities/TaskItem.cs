@@ -11,18 +11,18 @@ namespace SIFS.Domain.Entities
         public Guid Id { get; private set; } = UuidV7.NewUuidV7();
         public Guid TaskId { get; private set; }
         public string Url { get; private set; }
-        public List<AiServiceType> Types { get; private set; }
+        public AiServiceType Type { get; private set; }
         public AlgoTaskStatus Status { get; private set; } = AlgoTaskStatus.pending;
         public string Description { get; private set; } = null!;
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
-        public Result<List<DetectionResult>>? Result { get; private set; }
+        public Result<DetectionResult>? Result { get; private set; }
 
-        public TaskItem(Guid taskId, string url, List<AiServiceType> types)
+        public TaskItem(Guid taskId, string url, AiServiceType type)
         {
             TaskId = taskId;
             Url = url;
-            Types = types;
+            Type = type;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
@@ -45,12 +45,12 @@ namespace SIFS.Domain.Entities
                 UpdatedAt = DateTime.UtcNow;
             }
         }
-        public void MarkAsDone(List<DetectionResult> result)
+        public void MarkAsDone(DetectionResult result)
         {
             if(Status == AlgoTaskStatus.running)
             {
                 Status = AlgoTaskStatus.done;
-                Result = Result<List<DetectionResult>>.Success(result);
+                Result = Result<DetectionResult>.Success(result);
                 UpdatedAt = DateTime.UtcNow;
             }
         }

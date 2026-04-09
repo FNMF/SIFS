@@ -2,8 +2,6 @@
 {
     public interface IAiService
     {
-        AiServiceType Type { get; }
-
-        Task<DetectionResult> DetectAsync(string imagePath);
+        Task<DetectionResult> DetectAsync(AiServiceType type, string imagePath);
     }
 }
