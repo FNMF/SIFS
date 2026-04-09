@@ -1,5 +1,7 @@
-﻿using SIFS.Application.DetectionApp;
+﻿using SIFS.Infrastructure.External;
+using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Infrastructure.Repositories;
+using SIFS.Shared.Helpers;
 
 namespace SIFS.Application.AlgoTaskApp
 {
@@ -7,16 +9,19 @@ namespace SIFS.Application.AlgoTaskApp
     {
         private readonly IAlgoTaskRepository _algoTaskRepo;
         private readonly ITaskListRepository _taskListRepo;
-        private readonly IDetectionService _detectionService;
+        private readonly IResultFileRepository _resultFileRepository;
+        private readonly IAiService _aiService;
 
         public AlgoTaskAppService(
             IAlgoTaskRepository algoTaskRepo,
             ITaskListRepository taskListRepo,
-            IDetectionService detectionService)
+            IResultFileRepository resultFileRepository,
+            IAiService aiService)
         {
             _algoTaskRepo = algoTaskRepo;
             _taskListRepo = taskListRepo;
-            _detectionService = detectionService;
+            _resultFileRepository = resultFileRepository;
+            _aiService = aiService;
         }
 
         public async Task ExecuteAsync(Guid algoTaskId)
@@ -37,8 +42,20 @@ namespace SIFS.Application.AlgoTaskApp
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
 
                 // 调用 AI
-                var result = await _detectionService
-                    .DetectSelected(task.Url, task.Type);
+                var result = await _aiService
+                    .DetectAsync(task.Type, task.Url);
+
+                // 保存结果文件记录
+                var resultFile = new ResultFile
+                {
+                    Id = UuidV7.NewUuidV7(),
+                    AlgoTaskId = task.Id,
+                    AlgoType = (int)task.Type,
+                    IsFake = result.IsFake,
+                    Confidence = result.Confidence,
+                    MaskLocalUrl = result.MaskUrl,
+                };
+                await _resultFileRepository.InsertAsync(resultFile);
 
                 // 标记完成
                 task.MarkAsDone(result);

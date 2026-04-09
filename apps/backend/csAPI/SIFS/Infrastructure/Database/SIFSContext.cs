@@ -23,6 +23,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<Localfile> Localfiles { get; set; }
 
+    public virtual DbSet<ResultFile> ResultFiles { get; set; }
+
     public virtual DbSet<TaskList> TaskLists { get; set; }
 
     public virtual DbSet<TaskTypeMap> TaskTypeMaps { get; set; }
@@ -60,6 +62,12 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.AlgoTaskId).IsFixedLength();
+        });
+
+        modelBuilder.Entity<ResultFile>(entity =>
+        {
+            entity.Property(e => e.AlgoTaskId).IsFixedLength();
+            entity.Property(e => e.Id).IsFixedLength();
         });
 
         modelBuilder.Entity<TaskList>(entity =>
