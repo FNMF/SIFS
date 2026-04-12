@@ -31,6 +31,12 @@ namespace SIFS.Infrastructure.Repositories
             if (entity == null)
                 return null;
 
+            // 取 TaskList
+            var taskList = await _context.TaskLists
+                .FirstOrDefaultAsync(t => t.Id == entity.TaskId);
+            if (taskList == null)
+                return null;
+
             // 取 Localfile
             var localFile = await _context.Localfiles
                 .FirstOrDefaultAsync(f => f.AlgoTaskId == id);
@@ -53,7 +59,7 @@ namespace SIFS.Infrastructure.Repositories
                 throw new Exception($"TypeId {taskTypeMap.TypeId} 未找到对应的 AlgoType");
 
             // Map 聚合
-            var taskAggregate = MapToAggregate(entity, localFile, algoType);
+            var taskAggregate = MapToAggregate(entity, taskList, localFile, algoType);
 
             return Result<TaskItem>.Success(taskAggregate);
         }
@@ -69,6 +75,7 @@ namespace SIFS.Infrastructure.Repositories
         }
         private TaskItem MapToAggregate(
             AlgoTask entity,
+            TaskList taskList,
             Localfile localFile,
             AlgoType algoType)
         {
@@ -76,7 +83,7 @@ namespace SIFS.Infrastructure.Repositories
             var type = Enum.Parse<AiServiceType>(algoType.Name, true);
 
             // 构建 TaskItem
-            var task = new TaskItem(entity.TaskId, localFile.UrlLocal, type );
+            var task = new TaskItem(entity.TaskId, localFile.UrlLocal, type, taskList.Level);
 
             // 回填基础字段
             typeof(TaskItem).GetProperty("Id")!.SetValue(task, entity.Id);

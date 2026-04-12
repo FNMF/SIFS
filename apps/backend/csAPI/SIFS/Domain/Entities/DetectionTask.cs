@@ -14,12 +14,14 @@ namespace SIFS.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
         public List<AiServiceType> Types { get; private set; }
+        public int? Level { get; private set; }
 
-        public DetectionTask(Guid userid, List<string> urls, List<AiServiceType> types)
+        public DetectionTask(Guid userid, List<string> urls, List<AiServiceType> types, int? level)
         {
             UserId = userid;                                                                                                                                                                 
             Urls = urls;
             Types = types;
+            Level = level;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
@@ -36,7 +38,7 @@ namespace SIFS.Domain.Entities
         }
         public List<TaskItem> GenerateAlgoTasks()
         {
-            return Urls.SelectMany(url => Types.Select(type => new TaskItem(Id, url, type))).ToList();
+            return Urls.SelectMany(url => Types.Select(type => new TaskItem(Id, url, type, Level))).ToList();
         }
         public bool OnAlgoTaskCompleted()
         {

@@ -43,7 +43,7 @@ namespace SIFS.Application.AlgoTaskApp
 
                 // 调用 AI
                 var result = await _aiService
-                    .DetectAsync(task.Type, task.Url);
+                    .DetectAsync(task.Type, task.Url, task.Level);
 
                 // 保存结果文件记录
                 var resultFile = new ResultFile

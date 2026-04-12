@@ -110,7 +110,7 @@ namespace SIFS.Infrastructure.Repositories
                 .ToList();
 
             // 创建 DetectionTask
-            var detectionTask = new DetectionTask(taskList.UserId, urls, detectionTypes);
+            var detectionTask = new DetectionTask(taskList.UserId, urls, detectionTypes, taskList.Level);
 
             // 回填基础字段（重要）
             typeof(DetectionTask).GetProperty("Id")!

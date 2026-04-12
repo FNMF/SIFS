@@ -26,4 +26,7 @@ public partial class TaskList
 
     [Column("updated_at", TypeName = "datetime")]
     public DateTime UpdatedAt { get; set; }
+
+    [Column("level")]
+    public int? Level { get; set; }
 }

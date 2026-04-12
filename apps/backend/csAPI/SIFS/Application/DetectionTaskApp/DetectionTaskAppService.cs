@@ -68,7 +68,7 @@ namespace SIFS.Application.DetectionTaskApp
                 }
 
                 // 创建DetectionTask的Domain对象并持久化
-                var detectionTask = new DetectionTask(userId, urls, dto.Types);
+                var detectionTask = new DetectionTask(userId, urls, dto.Types, dto.Level);
 
                 await _taskListRepo.InsertAsync(detectionTask.ToEntity());
 
@@ -78,7 +78,7 @@ namespace SIFS.Application.DetectionTaskApp
                     foreach (var type in dto.Types)
                     {
                         // 创建 AlgoTask
-                        var taskItem = new TaskItem(detectionTask.Id, file.Url, type);
+                        var taskItem = new TaskItem(detectionTask.Id, file.Url, type, dto.Level);
                         var algoTask = taskItem.ToEntity();
 
                         await _algoTaskRepo.InsertAsync(algoTask);

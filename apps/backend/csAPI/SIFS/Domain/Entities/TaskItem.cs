@@ -12,19 +12,21 @@ namespace SIFS.Domain.Entities
         public Guid TaskId { get; private set; }
         public string Url { get; private set; }
         public AiServiceType Type { get; private set; }
+        public int? Level { get; private set; }
         public AlgoTaskStatus Status { get; private set; } = AlgoTaskStatus.pending;
         public string Description { get; private set; } = null!;
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
         public Result<DetectionResult>? Result { get; private set; }
 
-        public TaskItem(Guid taskId, string url, AiServiceType type)
+        public TaskItem(Guid taskId, string url, AiServiceType type, int? level)
         {
             TaskId = taskId;
             Url = url;
             Type = type;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
+            Level = level;
         }
         public AlgoTask ToEntity()
         {

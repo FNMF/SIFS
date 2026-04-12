@@ -4,11 +4,11 @@ using SIFS.Infrastructure.Database;
 
 namespace SIFS.Infrastructure
 {
-    public class AlgoTaskRecoveryService : IHostedService
+    public class AlgoTaskRecovery : IHostedService
     {
         private readonly IAlgoTaskQueue _queue;
         private readonly IServiceScopeFactory _scopeFactory;
-        public AlgoTaskRecoveryService(
+        public AlgoTaskRecovery(
             IAlgoTaskQueue queue,
             IServiceScopeFactory scopeFactory)
         {
