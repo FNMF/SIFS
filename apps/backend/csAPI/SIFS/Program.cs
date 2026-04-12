@@ -80,6 +80,7 @@ namespace SIFS
             builder.Services.AddSingleton<IAlgoTaskQueue>(sp => sp.GetRequiredService<AlgoTaskQueue>());
 
             builder.Services.AddHostedService<AlgoTaskWorker>();
+            builder.Services.AddHostedService<AlgoTaskRecoveryService>();
 
             var app = builder.Build();
 

@@ -8,7 +8,11 @@ namespace SIFS.Infrastructure
 
         public AlgoTaskQueue()
         {
-            _channel = Channel.CreateUnbounded<Guid>();
+            _channel = Channel.CreateBounded<Guid>(
+                new BoundedChannelOptions(1000)     // 1000容量防止OOM
+            {
+                FullMode = BoundedChannelFullMode.Wait
+            });
         }
 
         public async ValueTask EnqueueAsync(Guid algoTaskId)
