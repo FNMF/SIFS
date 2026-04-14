@@ -4,15 +4,18 @@ namespace SIFS.Infrastructure
 {
     public class AlgoTaskWorker : BackgroundService
     {
-        private readonly AlgoTaskQueue _queue;
+        private readonly IAlgoTaskQueue _queue;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<AlgoTaskWorker> _logger;
 
         public AlgoTaskWorker(
-            AlgoTaskQueue queue,
-            IServiceScopeFactory scopeFactory)
+            IAlgoTaskQueue queue,
+            IServiceScopeFactory scopeFactory,
+            ILogger<AlgoTaskWorker> logger)
         {
             _queue = queue;
             _scopeFactory = scopeFactory;
+            _logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,7 +33,8 @@ namespace SIFS.Infrastructure
                 }
                 catch (Exception ex)
                 {
-                    // 这里可以加日志 / 重试
+                    // 日志 / 重试
+                    _logger.LogError(ex, "AlgoTaskWorker执行任务失败，TaskId: {TaskId}", taskId);
                 }
             }
         }

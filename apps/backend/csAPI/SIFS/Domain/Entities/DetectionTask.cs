@@ -34,6 +34,7 @@ namespace SIFS.Domain.Entities
                 Status = Status,
                 CreatedAt = CreatedAt,
                 UpdatedAt = UpdatedAt,
+                Level = Level
             };
         }
         public List<TaskItem> GenerateAlgoTasks()

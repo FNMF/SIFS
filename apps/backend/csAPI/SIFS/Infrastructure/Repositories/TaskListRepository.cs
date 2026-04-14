@@ -17,7 +17,9 @@ namespace SIFS.Infrastructure.Repositories
         }
         public async Task<Result<TaskList>> GetTaskListByIdAsync(Guid id)
         {
-            var taskList = await _context.TaskLists.FirstOrDefaultAsync(t => t.Id == id);
+            var taskList = await _context.TaskLists
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == id);
             return taskList != null
                 ? Result<TaskList>.Success(taskList)
                 : Result<TaskList>.Fail(ResultCode.NotFound, "任务列表记录不存在");
@@ -34,6 +36,7 @@ namespace SIFS.Infrastructure.Repositories
 
             // 查 AlgoTasks
             var algoTasks = await _context.AlgoTasks
+                .AsNoTracking()
                 .Where(t => t.TaskId == taskList.Id)
                 .ToListAsync();
 
@@ -41,11 +44,13 @@ namespace SIFS.Infrastructure.Repositories
 
             // 查 LocalFiles
             var localFiles = await _context.Localfiles
+                .AsNoTracking()
                 .Where(f => algoTaskIds.Contains(f.AlgoTaskId))
                 .ToListAsync();
 
             // 查 TaskTypeMap（所有子任务）
             var taskTypeMaps = await _context.TaskTypeMaps
+                .AsNoTracking()
                 .Where(m => algoTaskIds.Contains(m.TaskId))
                 .ToListAsync();
 
@@ -53,6 +58,7 @@ namespace SIFS.Infrastructure.Repositories
 
             // 查 AlgoType
             var algoTypes = await _context.AlgoTypes
+                .AsNoTracking()
                 .Where(t => typeIds.Contains(t.Id))
                 .ToListAsync();
 
@@ -73,7 +79,18 @@ namespace SIFS.Infrastructure.Repositories
         }
         public async Task UpdateAsync(TaskList taskList)
         {
-            _context.TaskLists.Update(taskList);
+            var local = _context.TaskLists.Local.FirstOrDefault(x => x.Id == taskList.Id);
+
+            if (local != null)
+            {
+                _context.Entry(local).CurrentValues.SetValues(taskList);
+            }
+            else
+            {
+                _context.TaskLists.Attach(taskList);
+                _context.Entry(taskList).State = EntityState.Modified;
+            }
+
             await _context.SaveChangesAsync();
         }
         private DetectionTask MapToAggregate(

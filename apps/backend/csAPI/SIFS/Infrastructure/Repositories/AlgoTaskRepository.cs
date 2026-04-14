@@ -17,7 +17,9 @@ namespace SIFS.Infrastructure.Repositories
         }
         public async Task<Result<AlgoTask>> GetTaskByIdAsync(Guid id)
         {
-            var algoTask = await _context.AlgoTasks.FirstOrDefaultAsync(t => t.Id == id);
+            var algoTask = await _context.AlgoTasks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == id);
             return algoTask != null
                 ? Result<AlgoTask>.Success(algoTask)
                 : Result<AlgoTask>.Fail(ResultCode.NotFound, "算法任务记录不存在");
@@ -26,19 +28,22 @@ namespace SIFS.Infrastructure.Repositories
         {
             // 取 AlgoTask 基础实体
             var entity = await _context.AlgoTasks
+                .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (entity == null)
-                return null;
+                return Result<TaskItem>.Fail(ResultCode.NotFound, "AlgoTask不存在");
 
             // 取 TaskList
             var taskList = await _context.TaskLists
+                .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Id == entity.TaskId);
             if (taskList == null)
-                return null;
+                return Result<TaskItem>.Fail(ResultCode.NotFound, "父任务不存在");
 
             // 取 Localfile
             var localFile = await _context.Localfiles
+                .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.AlgoTaskId == id);
 
             if (localFile == null)
@@ -46,14 +51,16 @@ namespace SIFS.Infrastructure.Repositories
 
             // 取 TaskTypeMap
             var taskTypeMap = await _context.TaskTypeMaps
-            .FirstOrDefaultAsync(m => m.TaskId == id);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.TaskId == id);
 
             if (taskTypeMap == null)
                 throw new Exception($"AlgoTask {id} 没有对应的 TaskTypeMap");
 
             // 取 AlgoType
             var algoType = await _context.AlgoTypes
-            .FirstOrDefaultAsync(t => t.Id == taskTypeMap.TypeId);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == taskTypeMap.TypeId);
 
             if (algoType == null)
                 throw new Exception($"TypeId {taskTypeMap.TypeId} 未找到对应的 AlgoType");
@@ -70,7 +77,20 @@ namespace SIFS.Infrastructure.Repositories
         }
         public async Task UpdateAsync(AlgoTask algoTask)
         {
-            _context.AlgoTasks.Update(algoTask);
+            var local = _context.AlgoTasks.Local.FirstOrDefault(x => x.Id == algoTask.Id);
+
+            if (local != null)
+            {
+                // 已经有同 Id 的实体被跟踪，直接把值拷进去
+                _context.Entry(local).CurrentValues.SetValues(algoTask);
+            }
+            else
+            {
+                // 当前没跟踪，就附加并标记修改
+                _context.AlgoTasks.Attach(algoTask);
+                _context.Entry(algoTask).State = EntityState.Modified;
+            }
+
             await _context.SaveChangesAsync();
         }
         private TaskItem MapToAggregate(

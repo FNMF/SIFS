@@ -59,7 +59,7 @@ namespace SIFS
             builder.Services.AddHttpContextAccessor();
 
             builder.Services.Configure<AiServiceOptions>(
-    builder.Configuration.GetSection("AiServices"));
+    builder.Configuration.GetSection("AiServiceOptions"));
 
             //数据库上下文注册
             builder.Services.AddDbContext<SIFSContext>(options =>
@@ -76,8 +76,7 @@ namespace SIFS
                             .AsImplementedInterfaces()
                             .WithScopedLifetime());
 
-            builder.Services.AddSingleton<AlgoTaskQueue>();
-            builder.Services.AddSingleton<IAlgoTaskQueue>(sp => sp.GetRequiredService<AlgoTaskQueue>());
+            builder.Services.AddSingleton<IAlgoTaskQueue, AlgoTaskQueue>();
 
             builder.Services.AddHostedService<AlgoTaskWorker>();
             builder.Services.AddHostedService<AlgoTaskRecovery>();
@@ -89,6 +88,7 @@ namespace SIFS
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
+            app.UseAuthentication();
 
             app.UseStaticFiles(new StaticFileOptions
             {

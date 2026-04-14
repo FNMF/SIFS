@@ -20,6 +20,7 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly ILocalfileRepository _fileRepo;
         private readonly ITaskTypeMapRepository _taskTypeMapRepo;
         private readonly IAlgoTaskQueue _queue;
+        private readonly ILogger<DetectionTaskAppService> _logger;
 
         public DetectionTaskAppService(
             ILocalfileService localfileService,
@@ -27,7 +28,8 @@ namespace SIFS.Application.DetectionTaskApp
             IAlgoTaskRepository algoTaskRepo,
             ILocalfileRepository fileRepo,
             ITaskTypeMapRepository taskTypeMapRepo,
-            IAlgoTaskQueue queue)
+            IAlgoTaskQueue queue,
+            ILogger<DetectionTaskAppService> logger)
         {
             _localfileService = localfileService;
             _taskListRepo = taskListRepo;
@@ -35,6 +37,7 @@ namespace SIFS.Application.DetectionTaskApp
             _fileRepo = fileRepo;
             _taskTypeMapRepo = taskTypeMapRepo;
             _queue = queue;
+            _logger = logger;
         }
 
         public async Task<Result<Guid>> CreateAsync(CreateDetectionTaskDto dto, Guid userId)

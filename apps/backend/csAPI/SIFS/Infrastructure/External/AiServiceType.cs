@@ -2,7 +2,7 @@
 {
     public enum AiServiceType
     {
-        Sfnet = 0,
+        FLDCF = 0,
         EdgeDetector = 1,
         FrequencyAnalyzer = 2
     }
