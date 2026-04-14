@@ -689,6 +689,7 @@ button {
   font-size: 14px;
   color: #1e293b;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 @media (max-width: 960px) {

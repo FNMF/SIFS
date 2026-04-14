@@ -11,18 +11,36 @@ export function useAuthStore() {
   const isLoggedIn = computed(() => !!state.accessToken && !!state.userInfo)
 
   function setAuth(loginData) {
-    state.accessToken = loginData.AccessToken
-    state.refreshToken = loginData.RefreshToken
-    state.userInfo = loginData.UserReadDto
+    const accessToken = loginData?.AccessToken || ''
+    const refreshToken = loginData?.RefreshToken || ''
+    const userInfo = loginData?.UserReadDto || null
 
-    tokenStorage.setAccessToken(loginData.AccessToken)
-    tokenStorage.setRefreshToken(loginData.RefreshToken)
-    tokenStorage.setUserInfo(loginData.UserReadDto)
+    state.accessToken = accessToken
+    state.refreshToken = refreshToken
+    state.userInfo = userInfo
+
+    if (accessToken) {
+      tokenStorage.setAccessToken(accessToken)
+    } else {
+      tokenStorage.removeAccessToken()
+    }
+
+    if (refreshToken) {
+      tokenStorage.setRefreshToken(refreshToken)
+    } else {
+      tokenStorage.removeRefreshToken()
+    }
+
+    tokenStorage.setUserInfo(userInfo)
   }
 
   function updateAccessToken(accessToken) {
-    state.accessToken = accessToken
-    tokenStorage.setAccessToken(accessToken)
+    state.accessToken = accessToken || ''
+    if (accessToken) {
+      tokenStorage.setAccessToken(accessToken)
+    } else {
+      tokenStorage.removeAccessToken()
+    }
   }
 
   function clearAuth() {
