@@ -23,6 +23,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<Localfile> Localfiles { get; set; }
 
+    public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
+
     public virtual DbSet<ResultFile> ResultFiles { get; set; }
 
     public virtual DbSet<TaskList> TaskLists { get; set; }
@@ -62,6 +64,14 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.AlgoTaskId).IsFixedLength();
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.Property(e => e.Id).IsFixedLength();
+            entity.Property(e => e.UserId).IsFixedLength();
         });
 
         modelBuilder.Entity<ResultFile>(entity =>

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace SIFS.Shared.Helpers.JWT
 {
-    public class JwtHelper
+    public class JwtHelper:IJwtHelper
     {
         private readonly JwtSettings _settings;
 
@@ -51,6 +51,10 @@ namespace SIFS.Shared.Helpers.JWT
 
             var token = CreateToken(claims);
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        public int GetExpiresMinutes()
+        {
+            return _settings.ExpiresMinutes;
         }
     }
 }

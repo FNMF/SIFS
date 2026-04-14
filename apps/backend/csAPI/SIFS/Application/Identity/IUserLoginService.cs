@@ -5,6 +5,7 @@ namespace SIFS.Application.Identity
 {
     public interface IUserLoginService
     {
-        Task<Result<UserReadDto>> LoginAsync(UserLoginDto userLoginDto);
+        Task<Result<LoginTokenResult>> LoginAsync(UserLoginDto userLoginDto);
+        Task<Result<string>> RefreshTokenAsync(string refreshToken);
     }
 }

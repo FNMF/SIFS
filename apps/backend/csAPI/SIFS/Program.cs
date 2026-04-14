@@ -56,7 +56,26 @@ namespace SIFS
                 Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
             )
         };
+    })
+    .AddJwtBearer("ExpiredAllowed", options =>
+    {
+        var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = false,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
+            )
+        };
     });
+            builder.Services.AddScoped<IJwtHelper, JwtHelper>();
+
             builder.Services.AddHttpContextAccessor();
 
             builder.Services.Configure<AiServiceOptions>(
@@ -81,6 +100,7 @@ namespace SIFS
                         type.Name.EndsWith("Service") || type.Name.EndsWith("Repository") || type.Name.EndsWith("Factory")))
                             .AsImplementedInterfaces()
                             .WithScopedLifetime());
+            
 
             builder.Services.AddSingleton<IAlgoTaskQueue, AlgoTaskQueue>();
 
