@@ -1,51 +1,31 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
+import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
-import Home from '../views/Home.vue'
-import History from '../views/History.vue'
+import Upload from '../views/Upload.vue'
+import { tokenStorage } from '../utils/storage'
 
 const routes = [
-  { 
-    path: '/', 
-    redirect: '/home' 
-  },
-  { 
-    path: '/login', 
-    name:'login', 
-    component: Login ,
-    meta: { guestOnly: true }
-  },
-  { 
-    path: '/register', 
-    name:'register', 
-    component: Register ,
-    meta: { guestOnly: true }
-  },
-  { 
-    path: '/home', 
-    name:'home', 
-    component: Home 
-  },
-  { 
-    path: '/history', 
-    name:'history', 
-    component: History 
-  }
+  { path: '/', name: 'home', component: Home },
+  { path: '/login', name: 'login', component: Login },
+  { path: '/register', name: 'register', component: Register },
+  { path: '/upload', name: 'upload', component: Upload, meta: { requiresAuth: true } }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
-  scrollBehavior(to) {
-    if (to.hash) {
-      return {
-        el: to.hash,
-        behavior: 'smooth'
-      }
-    }
-    return { top: 0, behavior: 'smooth' }
+  routes
+})
+
+router.beforeEach((to, from, next) => {
+  const accessToken = tokenStorage.getAccessToken()
+
+  if (to.meta.requiresAuth && !accessToken) {
+    next('/login')
+    return
   }
+
+  next()
 })
 
 export default router

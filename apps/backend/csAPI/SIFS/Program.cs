@@ -107,6 +107,18 @@ namespace SIFS
             builder.Services.AddHostedService<AlgoTaskWorker>();
             builder.Services.AddHostedService<AlgoTaskRecovery>();
 
+            // CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("Frontend", policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -124,6 +136,8 @@ namespace SIFS
             });
 
             app.MapControllers();
+
+            app.UseCors("Frontend");
 
             app.Run();
         }

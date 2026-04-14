@@ -13,8 +13,8 @@
         </p>
 
         <div class="hero__actions">
-          <el-button type="primary" size="large" round @click="jumpTo('#workflow')">
-            立即尝试
+          <el-button type="primary" size="large" round @click="goTry">
+              立即尝试
           </el-button>
           <el-button size="large" round @click="jumpTo('#about')">了解更多</el-button>
         </div>
@@ -132,6 +132,26 @@
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function goTry() {
+  if (authStore.isLoggedIn.value) {
+    router.push('/upload')
+  } else {
+    router.push('/login')
+  }
+}
+
+function goLogin() {
+  router.push('/login')
+}
+
+function goRegister() {
+  router.push('/register')
+}
+
 import AppHeader from '../components/AppHeader.vue'
 import FloatingTryButton from '../components/FloatingTryButton.vue'
 

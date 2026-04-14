@@ -4,37 +4,46 @@ import { tokenStorage } from '../utils/storage'
 const state = reactive({
   accessToken: tokenStorage.getAccessToken(),
   refreshToken: tokenStorage.getRefreshToken(),
-  user: tokenStorage.getUser()
+  userInfo: tokenStorage.getUserInfo()
 })
 
 export function useAuthStore() {
-  const isAuthenticated = computed(() => Boolean(state.accessToken))
+  const isLoggedIn = computed(() => !!state.accessToken && !!state.userInfo)
 
-  const setAuth = (payload) => {
-    const accessToken = payload?.AccessToken || payload?.accessToken || ''
-    const refreshToken = payload?.RefreshToken || payload?.refreshToken || ''
-    const user = payload?.UserReadDto || payload?.userReadDto || payload?.user || null
+  function setAuth(loginData) {
+    state.accessToken = loginData.AccessToken
+    state.refreshToken = loginData.RefreshToken
+    state.userInfo = loginData.UserReadDto
 
-    state.accessToken = accessToken
-    state.refreshToken = refreshToken
-    state.user = user
-
-    tokenStorage.setAccessToken(accessToken)
-    tokenStorage.setRefreshToken(refreshToken)
-    tokenStorage.setUser(user)
+    tokenStorage.setAccessToken(loginData.AccessToken)
+    tokenStorage.setRefreshToken(loginData.RefreshToken)
+    tokenStorage.setUserInfo(loginData.UserReadDto)
   }
 
-  const logout = () => {
+  function updateAccessToken(accessToken) {
+    state.accessToken = accessToken
+    tokenStorage.setAccessToken(accessToken)
+  }
+
+  function clearAuth() {
     state.accessToken = ''
     state.refreshToken = ''
-    state.user = null
+    state.userInfo = null
     tokenStorage.clearAuth()
+  }
+
+  function restoreAuth() {
+    state.accessToken = tokenStorage.getAccessToken()
+    state.refreshToken = tokenStorage.getRefreshToken()
+    state.userInfo = tokenStorage.getUserInfo()
   }
 
   return {
     state,
-    isAuthenticated,
+    isLoggedIn,
     setAuth,
-    logout
+    updateAccessToken,
+    clearAuth,
+    restoreAuth
   }
 }

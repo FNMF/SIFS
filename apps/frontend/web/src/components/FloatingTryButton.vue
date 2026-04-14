@@ -1,6 +1,6 @@
 <template>
-  <button class="floating-btn" @click="scrollToTarget">
-    <span>立即尝试</span>
+  <button class="floating-btn" @click="goTry">
+    立即尝试
   </button>
 </template>
 
