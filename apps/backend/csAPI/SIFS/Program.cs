@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using SIFS.Infrastructure;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
+using SIFS.Shared.Extensions;
 using SIFS.Shared.Extensions.EventBus;
 using SIFS.Shared.Helpers.JWT;
 using System.Text;
@@ -59,7 +60,12 @@ namespace SIFS
             builder.Services.AddHttpContextAccessor();
 
             builder.Services.Configure<AiServiceOptions>(
-    builder.Configuration.GetSection("AiServiceOptions"));
+                builder.Configuration.GetSection("AiServiceOptions"));
+
+            //文件URL构建器配置
+            builder.Services.Configure<AppUrlOptions>(
+                builder.Configuration.GetSection("AppUrlOptions"));
+            builder.Services.AddSingleton<IFileUrlBuilder, FileUrlBuilder>();
 
             //数据库上下文注册
             builder.Services.AddDbContext<SIFSContext>(options =>

@@ -66,8 +66,10 @@ public partial class SIFSContext : DbContext
 
         modelBuilder.Entity<ResultFile>(entity =>
         {
-            entity.Property(e => e.AlgoTaskId).IsFixedLength();
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
             entity.Property(e => e.Id).IsFixedLength();
+            entity.Property(e => e.AlgoTaskId).IsFixedLength();
         });
 
         modelBuilder.Entity<TaskList>(entity =>

@@ -1,6 +1,7 @@
 ﻿using SIFS.Infrastructure.External;
 using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Infrastructure.Repositories;
+using SIFS.Shared.Extensions;
 using SIFS.Shared.Helpers;
 
 namespace SIFS.Application.AlgoTaskApp
@@ -11,17 +12,23 @@ namespace SIFS.Application.AlgoTaskApp
         private readonly ITaskListRepository _taskListRepo;
         private readonly IResultFileRepository _resultFileRepository;
         private readonly IAiService _aiService;
+        private readonly IFileUrlBuilder _urlBuilder;
+        private readonly ILogger<AlgoTaskAppService> _logger;
 
         public AlgoTaskAppService(
             IAlgoTaskRepository algoTaskRepo,
             ITaskListRepository taskListRepo,
             IResultFileRepository resultFileRepository,
-            IAiService aiService)
+            IAiService aiService,
+            IFileUrlBuilder urlBuilder,
+            ILogger<AlgoTaskAppService> logger)
         {
             _algoTaskRepo = algoTaskRepo;
             _taskListRepo = taskListRepo;
             _resultFileRepository = resultFileRepository;
             _aiService = aiService;
+            _urlBuilder = urlBuilder;
+            _logger = logger;
         }
 
         public async Task ExecuteAsync(Guid algoTaskId)
@@ -37,13 +44,17 @@ namespace SIFS.Application.AlgoTaskApp
 
             try
             {
+                _logger.LogInformation("开始执行算法任务 {AlgoTaskId}", algoTaskId);
                 // 标记运行中
                 task.MarkAsRunning();
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
 
+                // URL 转换（本地路径 -> 可访问 URL）
+                var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
                 // 调用 AI
                 var result = await _aiService
-                    .DetectAsync(task.Type, task.Url, task.Level);
+                    .DetectAsync(task.Type, accessibleUrl, task.Level);
+                _logger.LogInformation("算法任务 {AlgoTaskId} 执行完成，结果: {IsFake},{Confidence},{Url}", algoTaskId, result.IsFake,result.Confidence,result.MaskUrl);
 
                 // 保存结果文件记录
                 var resultFile = new ResultFile
@@ -55,7 +66,9 @@ namespace SIFS.Application.AlgoTaskApp
                     Confidence = result.Confidence,
                     MaskLocalUrl = result.MaskUrl,
                 };
+                
                 await _resultFileRepository.InsertAsync(resultFile);
+                _logger.LogInformation("保存算法任务 {AlgoTaskId} 的结果文件记录，MaskLocalUrl: {MaskLocalUrl}", algoTaskId, result.MaskUrl);
 
                 // 标记完成
                 task.MarkAsDone(result);
@@ -88,6 +101,7 @@ namespace SIFS.Application.AlgoTaskApp
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
 
                 // TODO: 日志 / 重试
+                _logger.LogError(ex, "执行算法任务 {AlgoTaskId} 失败", algoTaskId);
             }
         }
     }

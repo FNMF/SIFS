@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SIFS.Infrastructure.Persistence.Models;
 
-[Keyless]
 [Table("result_file")]
 public partial class ResultFile
 {
+    [Key]
     [Column("id")]
     [MaxLength(16)]
     public Guid Id { get; set; }
