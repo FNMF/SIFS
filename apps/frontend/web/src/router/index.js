@@ -6,11 +6,32 @@ import Home from '../views/Home.vue'
 import History from '../views/History.vue'
 
 const routes = [
-  { path: '/', redirect: '/login' },
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
-  { path: '/home', component: Home },
-  { path: '/history', component: History }
+  { 
+    path: '/', 
+    redirect: '/home' 
+  },
+  { 
+    path: '/login', 
+    name:'login', 
+    component: Login ,
+    meta: { guestOnly: true }
+  },
+  { 
+    path: '/register', 
+    name:'register', 
+    component: Register ,
+    meta: { guestOnly: true }
+  },
+  { 
+    path: '/home', 
+    name:'home', 
+    component: Home 
+  },
+  { 
+    path: '/history', 
+    name:'history', 
+    component: History 
+  }
 ]
 
 const router = createRouter({
