@@ -84,7 +84,11 @@ const handleLogin = async () => {
       Account: form.account,
       Password: form.password
     })
+    console.log('登录接口返回:', data)
     setAuth(data)
+    console.log('accessToken ->', localStorage.getItem('sifs_access_token'))
+    console.log('refreshToken ->', localStorage.getItem('sifs_refresh_token'))
+    console.log('userInfo ->', localStorage.getItem('sifs_user_info'))
     ElMessage.success('登录成功')
     router.push(route.query.redirect || '/')
   } finally {

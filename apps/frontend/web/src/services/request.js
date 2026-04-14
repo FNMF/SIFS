@@ -7,8 +7,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5220
 let isRefreshing = false
 let pendingQueue = []
 
-function processQueue(newToken) {
-  pendingQueue.forEach((cb) => cb(newToken))
+function processQueue(token) {
+  pendingQueue.forEach(({ resolve, reject }) => {
+    if (token) {
+      resolve(token)
+    } else {
+      reject(new Error('登录已失效'))
+    }
+  })
   pendingQueue = []
 }
 
@@ -18,6 +24,7 @@ async function doRefreshToken() {
   const authStore = useAuthStore()
 
   if (!accessToken || !refreshToken) {
+    authStore.clearAuth()
     throw new Error('没有可用的登录信息')
   }
 
@@ -37,10 +44,13 @@ async function doRefreshToken() {
 
   const data = await response.json()
 
-  const loginData = data.Data || data.data || data
-  const newAccessToken = loginData.AccessToken || loginData.accessToken
-  const newRefreshToken = loginData.RefreshToken || loginData.refreshToken
-  const userInfo = loginData.UserReadDto || loginData.userReadDto || authStore.state.userInfo
+  const loginData = data?.Data || data?.data || data
+  const newAccessToken = loginData?.AccessToken || loginData?.accessToken
+  const newRefreshToken = loginData?.RefreshToken || loginData?.refreshToken
+  const userInfo =
+    loginData?.UserReadDto ||
+    loginData?.userReadDto ||
+    authStore.state.userInfo
 
   if (!newAccessToken || !newRefreshToken) {
     authStore.clearAuth()
@@ -56,8 +66,17 @@ async function doRefreshToken() {
   return newAccessToken
 }
 
+async function parseResponse(response) {
+  const contentType = response.headers.get('content-type') || ''
+  return contentType.includes('application/json')
+    ? await response.json()
+    : await response.text()
+}
+
 export async function request(url, options = {}, extra = {}) {
   const { skipAutoRefresh = false } = extra
+  const authStore = useAuthStore()
+
   const headers = new Headers(options.headers || {})
   const token = tokenStorage.getAccessToken()
 
@@ -82,60 +101,57 @@ export async function request(url, options = {}, extra = {}) {
   }
 
   if (response.status === 401 && !skipAutoRefresh) {
-    if (!isRefreshing) {
-      isRefreshing = true
-      try {
-        const newToken = await doRefreshToken()
-        processQueue(newToken)
-      } catch (error) {
-        processQueue('')
-        isRefreshing = false
-        throw error
-      }
-      isRefreshing = false
-    }
+    try {
+      const newToken = await new Promise((resolve, reject) => {
+        pendingQueue.push({ resolve, reject })
 
-    return new Promise((resolve, reject) => {
-      pendingQueue.push(async (newToken) => {
-        if (!newToken) {
-          reject(new Error('登录已失效'))
-          return
-        }
+        if (!isRefreshing) {
+          isRefreshing = true
 
-        try {
-          const retryHeaders = new Headers(options.headers || {})
-          if (!retryHeaders.has('Content-Type') && !(options.body instanceof FormData)) {
-            retryHeaders.set('Content-Type', 'application/json')
-          }
-          retryHeaders.set('Authorization', `Bearer ${newToken}`)
-
-          const retryResponse = await fetch(`${API_BASE_URL}${url}`, {
-            ...options,
-            headers: retryHeaders
-          })
-
-          const contentType = retryResponse.headers.get('content-type') || ''
-          const retryData = contentType.includes('application/json')
-            ? await retryResponse.json()
-            : await retryResponse.text()
-
-          if (!retryResponse.ok) {
-            reject(new Error(typeof retryData === 'string' ? retryData : retryData?.message || '请求失败'))
-            return
-          }
-
-          resolve(retryData)
-        } catch (err) {
-          reject(err)
+          doRefreshToken()
+            .then((token) => {
+              processQueue(token)
+            })
+            .catch((error) => {
+              authStore.clearAuth()
+              processQueue(null)
+              ElMessage.error(error.message || '登录已过期，请重新登录')
+            })
+            .finally(() => {
+              isRefreshing = false
+            })
         }
       })
-    })
+
+      const retryHeaders = new Headers(options.headers || {})
+      if (!retryHeaders.has('Content-Type') && !(options.body instanceof FormData)) {
+        retryHeaders.set('Content-Type', 'application/json')
+      }
+      retryHeaders.set('Authorization', `Bearer ${newToken}`)
+
+      const retryResponse = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers: retryHeaders
+      })
+
+      const retryData = await parseResponse(retryResponse)
+
+      if (!retryResponse.ok) {
+        const retryMessage =
+          typeof retryData === 'string'
+            ? retryData
+            : retryData?.message || retryData?.Message || '请求失败'
+        ElMessage.error(retryMessage)
+        throw new Error(retryMessage)
+      }
+
+      return retryData
+    } catch (error) {
+      throw error
+    }
   }
 
-  const contentType = response.headers.get('content-type') || ''
-  const data = contentType.includes('application/json')
-    ? await response.json()
-    : await response.text()
+  const data = await parseResponse(response)
 
   if (!response.ok) {
     const message =

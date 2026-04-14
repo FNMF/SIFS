@@ -6,7 +6,7 @@
     <section id="hero" class="hero section container">
       <div class="hero__content">
         <div class="section-tag">遥感识别 · 智能分割 · 可视化展示</div>
-        <h1 class="hero__title">让卫星图像识别结果更直观地被看见</h1>
+        <h1 class="hero__title">卫星图像识别结果更直观</h1>
         <p class="hero__desc">
           面向卫星图片识别场景，系统支持上传单张或多张卫星图片，调用后端完成模型处理，
           并返回 mask 图像地址与关键参数，帮助用户快速查看识别结果与分析信息。
@@ -66,7 +66,6 @@
         <div class="section-header">
           <div class="section-tag">系统能力</div>
           <h2>一个成熟系统应该告诉用户：它能做什么</h2>
-          <p>这里先把你的项目能力包装成“产品化表达”，后续再接真实接口与结果页。</p>
         </div>
 
         <div class="feature-grid">
@@ -103,7 +102,9 @@
           <h2>卫星图片识别系统，不只是“上传图片”这么简单</h2>
           <p>
             该系统面向遥感图像分析场景，前端主要承担结果可视化与交互呈现任务。
-            后续我们会继续扩展上传页、任务结果页、历史记录页与登录注册模块，形成完整闭环。
+          </p>
+          <p>
+            拥有上传页、任务结果页、历史记录页与登录注册模块，形成完整闭环。
           </p>
         </div>
         <div class="about__right">
@@ -121,8 +122,8 @@
               <strong>Mask 图 + 参数信息</strong>
             </div>
             <div class="about-panel__row">
-              <span>下一步</span>
-              <strong>接上传接口与结果详情页</strong>
+              <span>联系我们</span>
+              <strong>2205050217</strong>
             </div>
           </div>
         </div>
@@ -133,11 +134,17 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useAuthStore } from '../stores/auth'
+
+const authStore = useAuthStore()
+
+const isLoggedIn = computed(() => authStore.isLoggedIn.value)
 
 const router = useRouter()
 
 function goTry() {
-  if (authStore.isLoggedIn.value) {
+  if (isLoggedIn) {
     router.push('/upload')
   } else {
     router.push('/login')

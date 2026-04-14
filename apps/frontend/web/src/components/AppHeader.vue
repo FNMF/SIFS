@@ -10,7 +10,7 @@ const authStore = useAuthStore()
 const isScrolled = ref(false)
 
 const isLoggedIn = computed(() => authStore.isLoggedIn.value)
-const username = computed(() => authStore.state.userInfo?.Account || '用户')
+const username = computed(() => authStore.state.userInfo?.Account || authStore.state.userInfo?.account ||'用户')
 
 function handleScroll() {
   isScrolled.value = window.scrollY > 10
@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
         <div class="brand__logo">SI</div>
         <div>
           <div class="brand__title">卫星图片识别系统</div>
-          <div class="brand__subtitle">Satellite Image Recognition System</div>
+          <div class="brand__subtitle">Satellite Image Forensics System</div>
         </div>
       </div>
 
