@@ -9,6 +9,7 @@
         public int CompletedSubTaskCount { get; set; }
 
         public decimal Completion { get; set; }
+        public string Url { get; set; } = string.Empty;
 
         public DateTime UpdatedAt { get; set; }
     }
