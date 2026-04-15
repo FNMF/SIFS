@@ -10,6 +10,7 @@
 
         public decimal Completion { get; set; }
         public string Url { get; set; } = string.Empty;
+        public int? Level { get; set; }
 
         public DateTime UpdatedAt { get; set; }
     }

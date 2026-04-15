@@ -83,16 +83,16 @@ namespace SIFS.Infrastructure.Repositories
                 .ToListAsync();
 
             if (!algoTasks.Any())
-            {
                 return new List<AlgoReadDto>();
-            }
 
             var algoTaskIds = algoTasks.Select(x => x.Id).ToList();
 
-            var localFiles = await _context.Localfiles
+            var taskList = await _context.TaskLists
                 .AsNoTracking()
-                .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
-                .ToListAsync();
+                .FirstOrDefaultAsync(x => x.Id == taskId);
+
+            if (taskList == null)
+                throw new Exception("父任务不存在");
 
             var taskTypeMaps = await _context.TaskTypeMaps
                 .AsNoTracking()
@@ -109,9 +109,20 @@ namespace SIFS.Infrastructure.Repositories
                 .Where(x => typeIds.Contains(x.Id))
                 .ToListAsync();
 
-            var fileDict = localFiles
+            // 这里从 Resultfiles 取结果图
+            var resultFiles = await _context.ResultFiles
+                .AsNoTracking()
+                .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
+                .ToListAsync();
+
+            var resultFileDict = resultFiles
                 .GroupBy(x => x.AlgoTaskId)
-                .ToDictionary(x => x.Key, x => x.First().UrlLocal);
+                .ToDictionary(
+                    x => x.Key,
+                    x => x
+                        .Select(r => r.MaskLocalUrl)
+                        .FirstOrDefault() ?? string.Empty
+                );
 
             var typeMapDict = taskTypeMaps
                 .GroupBy(x => x.TaskId)
@@ -121,10 +132,10 @@ namespace SIFS.Infrastructure.Repositories
 
             return algoTasks.Select(x =>
             {
-                fileDict.TryGetValue(x.Id, out var url);
+                resultFileDict.TryGetValue(x.Id, out var url);
                 typeMapDict.TryGetValue(x.Id, out var typeId);
 
-                string? typeName = null;
+                string typeName = string.Empty;
                 if (typeId != 0 && typeDict.TryGetValue(typeId, out var name))
                 {
                     typeName = name;
@@ -133,9 +144,10 @@ namespace SIFS.Infrastructure.Repositories
                 return new AlgoReadDto
                 {
                     Guid = x.Id,
-                    Url = string.IsNullOrWhiteSpace(url) ? string.Empty : _fileUrlBuilder.ToPythonUrl(url),
-                    Type = typeName ?? string.Empty,
+                    Url = _fileUrlBuilder.ToPythonUrl(url?? string.Empty),
+                    Type = typeName,
                     Status = x.Status,
+                    Level = taskList.Level,
                     UpdatedAt = x.UpdatedAt
                 };
             }).ToList();

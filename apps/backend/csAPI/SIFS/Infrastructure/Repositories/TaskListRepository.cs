@@ -5,16 +5,20 @@ using SIFS.Domain.Enum;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
 using SIFS.Infrastructure.Persistence.Models;
+using SIFS.Shared.Extensions;
 using SIFS.Shared.Results;
+using System;
 
 namespace SIFS.Infrastructure.Repositories
 {
     public class TaskListRepository : ITaskListRepository
     {
         private readonly SIFSContext _context;
-        public TaskListRepository(SIFSContext context)
+        private readonly IFileUrlBuilder _fileUrlBuilder;
+        public TaskListRepository(SIFSContext context, IFileUrlBuilder fileUrlBuilder)
         {
             _context = context;
+            _fileUrlBuilder = fileUrlBuilder;
         }
         public async Task<Result<TaskList>> GetTaskListByIdAsync(Guid id)
         {
@@ -82,9 +86,7 @@ namespace SIFS.Infrastructure.Repositories
                 .ToListAsync();
 
             if (!taskLists.Any())
-            {
                 return new List<DetectionTaskReadDto>();
-            }
 
             var taskIds = taskLists.Select(x => x.Id).ToList();
 
@@ -93,10 +95,26 @@ namespace SIFS.Infrastructure.Repositories
                 .Where(x => taskIds.Contains(x.TaskId))
                 .ToListAsync();
 
+            var algoTaskIds = algoTasks.Select(x => x.Id).ToList();
+
+            var localFiles = await _context.Localfiles
+                .AsNoTracking()
+                .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
+                .ToListAsync();
+
             return taskLists.Select(task =>
             {
                 var currentAlgoTasks = algoTasks
                     .Where(x => x.TaskId == task.Id)
+                    .ToList();
+
+                var currentAlgoTaskIds = currentAlgoTasks
+                    .Select(x => x.Id)
+                    .ToHashSet();
+
+                var currentLocalFiles = localFiles
+                    .Where(x => currentAlgoTaskIds.Contains(x.AlgoTaskId))
+                    .OrderBy(x => x.Sid)
                     .ToList();
 
                 var subTaskCount = currentAlgoTasks.Count;
@@ -106,12 +124,20 @@ namespace SIFS.Infrastructure.Repositories
                     ? 0m
                     : Math.Round((decimal)completedSubTaskCount / subTaskCount, 4);
 
+                // 父任务原图：从 Localfile 里取 sid 最小的一张
+                // 因为当前创建逻辑里，同一张原图会为不同 type 生成多条 Localfile，这里取第一张即可
+                var originalUrl = currentLocalFiles
+                    .Select(x => x.UrlLocal)
+                    .FirstOrDefault() ?? string.Empty;
+
                 return new DetectionTaskReadDto
                 {
                     Guid = task.Id,
+                    Url = _fileUrlBuilder.ToPythonUrl(originalUrl ?? string.Empty),
                     SubTaskCount = subTaskCount,
                     CompletedSubTaskCount = completedSubTaskCount,
                     Completion = completion,
+                    Level = task.Level,
                     UpdatedAt = task.UpdatedAt
                 };
             }).ToList();
