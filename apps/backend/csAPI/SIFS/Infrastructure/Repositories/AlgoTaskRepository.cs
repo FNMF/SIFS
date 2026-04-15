@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SIFS.Application.DetectionTaskApp;
 using SIFS.Domain.Entities;
 using SIFS.Domain.Enum;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
 using SIFS.Infrastructure.Persistence.Models;
+using SIFS.Shared.Extensions;
 using SIFS.Shared.Results;
 
 namespace SIFS.Infrastructure.Repositories
@@ -11,9 +13,11 @@ namespace SIFS.Infrastructure.Repositories
     public class AlgoTaskRepository: IAlgoTaskRepository
     {
         private readonly SIFSContext _context;
-        public AlgoTaskRepository(SIFSContext context)
+        private readonly IFileUrlBuilder _fileUrlBuilder;
+        public AlgoTaskRepository(SIFSContext context, IFileUrlBuilder fileUrlBuilder)
         {
             _context = context;
+            _fileUrlBuilder = fileUrlBuilder;
         }
         public async Task<Result<AlgoTask>> GetTaskByIdAsync(Guid id)
         {
@@ -69,6 +73,72 @@ namespace SIFS.Infrastructure.Repositories
             var taskAggregate = MapToAggregate(entity, taskList, localFile, algoType);
 
             return Result<TaskItem>.Success(taskAggregate);
+        }
+        public async Task<List<AlgoReadDto>> GetAllReadDtosByTaskIdAsync(Guid taskId)
+        {
+            var algoTasks = await _context.AlgoTasks
+                .AsNoTracking()
+                .Where(x => x.TaskId == taskId)
+                .OrderByDescending(x => x.UpdatedAt)
+                .ToListAsync();
+
+            if (!algoTasks.Any())
+            {
+                return new List<AlgoReadDto>();
+            }
+
+            var algoTaskIds = algoTasks.Select(x => x.Id).ToList();
+
+            var localFiles = await _context.Localfiles
+                .AsNoTracking()
+                .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
+                .ToListAsync();
+
+            var taskTypeMaps = await _context.TaskTypeMaps
+                .AsNoTracking()
+                .Where(x => algoTaskIds.Contains(x.TaskId))
+                .ToListAsync();
+
+            var typeIds = taskTypeMaps
+                .Select(x => x.TypeId)
+                .Distinct()
+                .ToList();
+
+            var algoTypes = await _context.AlgoTypes
+                .AsNoTracking()
+                .Where(x => typeIds.Contains(x.Id))
+                .ToListAsync();
+
+            var fileDict = localFiles
+                .GroupBy(x => x.AlgoTaskId)
+                .ToDictionary(x => x.Key, x => x.First().UrlLocal);
+
+            var typeMapDict = taskTypeMaps
+                .GroupBy(x => x.TaskId)
+                .ToDictionary(x => x.Key, x => x.First().TypeId);
+
+            var typeDict = algoTypes.ToDictionary(x => x.Id, x => x.Name);
+
+            return algoTasks.Select(x =>
+            {
+                fileDict.TryGetValue(x.Id, out var url);
+                typeMapDict.TryGetValue(x.Id, out var typeId);
+
+                string? typeName = null;
+                if (typeId != 0 && typeDict.TryGetValue(typeId, out var name))
+                {
+                    typeName = name;
+                }
+
+                return new AlgoReadDto
+                {
+                    Guid = x.Id,
+                    Url = string.IsNullOrWhiteSpace(url) ? string.Empty : _fileUrlBuilder.ToPythonUrl(url),
+                    Type = typeName ?? string.Empty,
+                    Status = x.Status,
+                    UpdatedAt = x.UpdatedAt
+                };
+            }).ToList();
         }
         public async Task InsertAsync(AlgoTask algoTask)
         {

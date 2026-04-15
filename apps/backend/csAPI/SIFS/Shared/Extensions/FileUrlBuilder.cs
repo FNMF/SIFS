@@ -13,6 +13,16 @@ namespace SIFS.Shared.Extensions
 
         public string ToAbsoluteUrl(string relativePath)
         {
+            return BuildUrl(_options.BaseUrl, relativePath, "BaseUrl");
+        }
+
+        public string ToPythonUrl(string relativePath)
+        {
+            return BuildUrl(_options.PyBaseUrl, relativePath, "PyBaseUrl");
+        }
+
+        private string BuildUrl(string baseUrl, string relativePath, string optionName)
+        {
             if (string.IsNullOrWhiteSpace(relativePath))
                 throw new ArgumentException("relativePath 不能为空", nameof(relativePath));
 
@@ -22,13 +32,15 @@ namespace SIFS.Shared.Extensions
                 return relativePath;
             }
 
-            var baseUrl = _options.BaseUrl?.TrimEnd('/');
-            var path = relativePath.StartsWith("/") ? relativePath : "/" + relativePath;
+            baseUrl = baseUrl?.TrimEnd('/');
 
             if (string.IsNullOrWhiteSpace(baseUrl))
-                throw new InvalidOperationException("AppUrlOptions:BaseUrl 未配置");
+                throw new InvalidOperationException($"AppUrlOptions:{optionName} 未配置");
+
+            var path = relativePath.StartsWith("/") ? relativePath : "/" + relativePath;
 
             return baseUrl + path;
         }
+
     }
 }

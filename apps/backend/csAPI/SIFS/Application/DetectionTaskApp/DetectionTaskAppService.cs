@@ -121,6 +121,37 @@ namespace SIFS.Application.DetectionTaskApp
                 return Result<Guid>.Fail(ResultCode.BusinessError, ex.Message);
             }
         }
+        public async Task<Result<List<DetectionTaskReadDto>>> GetAllAsync(Guid userId)
+        {
+            try
+            {
+                var data = await _taskListRepo.GetAllReadDtosByUserIdAsync(userId);
+                return Result<List<DetectionTaskReadDto>>.Success(data);
+            }
+            catch (Exception ex)
+            {
+                return Result<List<DetectionTaskReadDto>>.Fail(ResultCode.BusinessError, ex.Message);
+            }
+        }
+        public async Task<Result<List<AlgoReadDto>>> GetAsync(Guid guid, Guid userId)
+        {
+            try
+            {
+                var taskListResult = await _taskListRepo.GetTaskListByIdAsync(guid);
+                if (!taskListResult.IsSuccess)
+                    return Result<List<AlgoReadDto>>.Fail(taskListResult.Code, taskListResult.Message);
+
+                if (taskListResult.Data.UserId != userId)
+                    return Result<List<AlgoReadDto>>.Fail(ResultCode.Forbidden, "无权访问该任务");
+
+                var data = await _algoTaskRepo.GetAllReadDtosByTaskIdAsync(guid);
+                return Result<List<AlgoReadDto>>.Success(data);
+            }
+            catch (Exception ex)
+            {
+                return Result<List<AlgoReadDto>>.Fail(ResultCode.BusinessError, ex.Message);
+            }
+        }
     }
 }
 

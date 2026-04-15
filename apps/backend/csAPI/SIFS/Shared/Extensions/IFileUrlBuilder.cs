@@ -3,5 +3,6 @@
     public interface IFileUrlBuilder
     {
         string ToAbsoluteUrl(string relativePath);
+        string ToPythonUrl(string relativePath);
     }
 }

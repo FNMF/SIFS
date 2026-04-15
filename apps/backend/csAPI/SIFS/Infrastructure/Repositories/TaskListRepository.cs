@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SIFS.Application.DetectionTaskApp;
 using SIFS.Domain.Entities;
 using SIFS.Domain.Enum;
 using SIFS.Infrastructure.Database;
@@ -71,6 +72,49 @@ namespace SIFS.Infrastructure.Repositories
                 algoTypes);
 
             return Result<DetectionTask>.Success(detectionTask);
+        }
+        public async Task<List<DetectionTaskReadDto>> GetAllReadDtosByUserIdAsync(Guid userId)
+        {
+            var taskLists = await _context.TaskLists
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .OrderByDescending(x => x.UpdatedAt)
+                .ToListAsync();
+
+            if (!taskLists.Any())
+            {
+                return new List<DetectionTaskReadDto>();
+            }
+
+            var taskIds = taskLists.Select(x => x.Id).ToList();
+
+            var algoTasks = await _context.AlgoTasks
+                .AsNoTracking()
+                .Where(x => taskIds.Contains(x.TaskId))
+                .ToListAsync();
+
+            return taskLists.Select(task =>
+            {
+                var currentAlgoTasks = algoTasks
+                    .Where(x => x.TaskId == task.Id)
+                    .ToList();
+
+                var subTaskCount = currentAlgoTasks.Count;
+                var completedSubTaskCount = currentAlgoTasks.Count(x => x.Status == (int)AlgoTaskStatus.done);
+
+                var completion = subTaskCount == 0
+                    ? 0m
+                    : Math.Round((decimal)completedSubTaskCount / subTaskCount, 4);
+
+                return new DetectionTaskReadDto
+                {
+                    Guid = task.Id,
+                    SubTaskCount = subTaskCount,
+                    CompletedSubTaskCount = completedSubTaskCount,
+                    Completion = completion,
+                    UpdatedAt = task.UpdatedAt
+                };
+            }).ToList();
         }
         public async Task InsertAsync(TaskList taskList)
         {

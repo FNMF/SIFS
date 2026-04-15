@@ -32,9 +32,23 @@ namespace SIFS.Api.DetectionTask
         {
             var uuid = _currentService.RequiredUuid;
 
-            //TODO
-            return Ok;
+            var result = await _detectionTaskAppService.GetAllAsync(uuid);
+
+            if (result.IsSuccess)
+                return Ok(result.Data);
+            else
+                return BadRequest(result.Message);
         }
-        
+        [HttpGet("{guid:guid}")]
+        public async Task<IActionResult> Get(Guid guid)
+        {
+            var uuid = _currentService.RequiredUuid;
+            var result = await _detectionTaskAppService.GetAsync(guid, uuid);
+
+            if (result.IsSuccess)
+                return Ok(result.Data);
+            else
+                return BadRequest(result.Message);
+        }
     }
 }
