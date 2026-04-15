@@ -26,12 +26,15 @@ namespace SIFS.Api.DetectionTask
             else
                 return BadRequest(result.Message);
         }
-        /*
+        
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var uuid = _currentService.RequiredUuid;
-        }*/
+
+            //TODO
+            return Ok;
+        }
         
     }
 }
