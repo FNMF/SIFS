@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Compare from '../views/Compare.vue'
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
@@ -8,6 +9,12 @@ import TaskDetail from '../views/TaskDetail.vue'
 import { tokenStorage } from '../utils/storage'
 
 const routes = [
+  {
+  path: '/compare/:algoGuid',
+  name: 'compare',
+  component: Compare,
+  meta: { requiresAuth: true }
+  },
   { path: '/', name: 'home', component: Home },
   { path: '/login', name: 'login', component: Login },
   { path: '/register', name: 'register', component: Register },

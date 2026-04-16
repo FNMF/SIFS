@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute , useRouter} from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import { getDetectionTaskDetailApi } from '../services/detectionTask'
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const detail = ref(null)
 
@@ -61,7 +62,18 @@ function getStatusType(status) {
 }
 
 function openCompare(algo) {
-  console.log('预留跳转 compare 页:', algo)
+  router.push({
+    path: `/compare/${algo.guid}`,
+    query: {
+      originImageUrl: task.value?.previewImageUrl || '',
+      maskUrl: algo.url || '',
+      type: algo.type || '',
+      status: algo.status ?? '',
+      level: algo.level ?? '',
+      isFake: algo.isFake ?? '',
+      confidence: algo.confidence ?? ''
+    }
+  })
 }
 
 onMounted(fetchDetail)
