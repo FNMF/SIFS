@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <AppHeader />
+    <AppHeader variant="landing" />
     <FloatingTryButton target="#workflow" />
 
     <section id="hero" class="hero section container">
