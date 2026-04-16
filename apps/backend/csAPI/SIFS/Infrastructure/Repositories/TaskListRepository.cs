@@ -103,24 +103,27 @@ namespace SIFS.Infrastructure.Repositories
                 .ToListAsync();
 
             var taskImageMap = algoTasks
-                .Join(localFiles,
-                    algo => algo.Id,
-                    file => file.AlgoTaskId,
-                    (algo, file) => new
-                    {
-                        TaskId = algo.TaskId,
-                        Url = file.UrlLocal,
-                        Sid = file.Sid
-                    })
-                .GroupBy(x => x.TaskId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g
-                        .OrderBy(x => x.Sid)
-                        .Select(x => x.Url)
-                        .Distinct()
-                        .ToList()
-                );
+    .Join(localFiles,
+        algo => algo.Id,
+        file => file.AlgoTaskId,
+        (algo, file) => new
+        {
+            TaskId = algo.TaskId,
+            Url = string.IsNullOrWhiteSpace(file.UrlLocal)
+                ? string.Empty
+                : _fileUrlBuilder.ToAbsoluteUrl(file.UrlLocal),
+            Sid = file.Sid
+        })
+    .GroupBy(x => x.TaskId)
+    .ToDictionary(
+        g => g.Key,
+        g => g
+            .OrderBy(x => x.Sid)
+            .Select(x => x.Url)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct()
+            .ToList()
+    );
 
             return taskLists.Select(task =>
             {
@@ -167,7 +170,8 @@ namespace SIFS.Infrastructure.Repositories
                 .ToListAsync();
 
             return localFiles
-                .Select(x => x.UrlLocal)
+                .Select(x => _fileUrlBuilder.ToAbsoluteUrl(x.UrlLocal))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToList();
         }

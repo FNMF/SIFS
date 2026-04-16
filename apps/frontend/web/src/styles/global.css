@@ -1237,3 +1237,20 @@ button {
   font-weight: 600;
   white-space: nowrap;
 }
+.task-card__preview,
+.detail-summary__preview {
+  position: relative;
+}
+
+.task-card__badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+}

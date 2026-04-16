@@ -14,7 +14,8 @@ function normalizeTask(item) {
     subTaskCount: item.subTaskCount ?? item.SubTaskCount ?? 0,
     completedSubTaskCount: item.completedSubTaskCount ?? item.CompletedSubTaskCount ?? 0,
     completion: Number(item.completion ?? item.Completion ?? 0),
-    url: item.url ?? item.Url ?? '',
+    previewImageUrl: item.previewImageUrl ?? item.PreviewImageUrl ?? '',
+    imageCount: item.imageCount ?? item.ImageCount ?? 0,
     level: item.level ?? item.Level,
     updatedAt: item.updatedAt ?? item.UpdatedAt ?? ''
   }
@@ -27,6 +28,7 @@ async function fetchTasks() {
   try {
     const data = await getDetectionTaskListApi()
     taskList.value = (data || []).map(normalizeTask)
+    console.log("数据" , taskList.value)
   } finally {
     loading.value = false
   }
@@ -61,8 +63,12 @@ onMounted(fetchTasks)
 
         <article v-for="task in taskList" :key="task.guid" class="task-card">
           <div class="task-card__preview">
-            <img v-if="task.url" :src="task.url" alt="原图预览" />
+            <img v-if="task.previewImageUrl" :src="task.previewImageUrl" alt="原图预览" />
             <div v-else class="task-card__placeholder">No Preview</div>
+
+            <div v-if="task.imageCount > 1" class="task-card__badge">
+              +{{ task.imageCount - 1 }}张
+            </div>
           </div>
 
           <div class="task-card__body">
