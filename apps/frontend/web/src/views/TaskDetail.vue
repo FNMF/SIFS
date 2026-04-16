@@ -1,46 +1,64 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
-import { getDetectionTaskDetailApi } from '../services/detectionTask'
+import { getDetectionTaskDetailApi, getDetectionTaskListApi } from '../services/detectionTask'
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
-const detail = ref(null)
+
+const taskSummary = ref(null)
+const algoTasks = ref([])
+
+function normalizeTask(item) {
+  return {
+    guid: item.guid ?? item.Guid,
+    subTaskCount: item.subTaskCount ?? item.SubTaskCount ?? 0,
+    completedSubTaskCount: item.completedSubTaskCount ?? item.CompletedSubTaskCount ?? 0,
+    completion: Number(item.completion ?? item.Completion ?? 0),
+    url: item.url ?? item.Url ?? '',
+    level: item.level ?? item.Level,
+    updatedAt: item.updatedAt ?? item.UpdatedAt ?? ''
+  }
+}
 
 function normalizeAlgo(item) {
   return {
     guid: item.guid ?? item.Guid,
-    url: item.url ?? item.Url ?? '',
-    type: item.type ?? item.Type ?? '未知算法',
+    url: item.url ?? item.Url ?? item.maskUrl ?? item.MaskUrl ?? '',
+    type: item.type ?? item.Type ?? item.name ?? item.Name ?? '未知算法',
     status: item.status ?? item.Status ?? 0,
     level: item.level ?? item.Level,
     updatedAt: item.updatedAt ?? item.UpdatedAt ?? ''
   }
 }
 
-function normalizeDetail(raw) {
-  if (!raw) return null
+const task = computed(() => taskSummary.value)
 
-  return {
-    guid: raw.guid ?? raw.Guid,
-    subTaskCount: raw.subTaskCount ?? raw.SubTaskCount ?? 0,
-    completedSubTaskCount: raw.completedSubTaskCount ?? raw.CompletedSubTaskCount ?? 0,
-    completion: Number(raw.completion ?? raw.Completion ?? 0),
-    url: raw.url ?? raw.Url ?? '',
-    level: raw.level ?? raw.Level,
-    updatedAt: raw.updatedAt ?? raw.UpdatedAt ?? '',
-    algoTasks: (raw.algoTasks ?? raw.AlgoTasks ?? raw.algos ?? raw.Algos ?? []).map(normalizeAlgo)
-  }
+async function fetchTaskSummary() {
+  const list = await getDetectionTaskListApi()
+  const current = (list || []).map(normalizeTask).find(item => item.guid === route.params.guid)
+  taskSummary.value = current || null
 }
 
-const task = computed(() => detail.value)
+async function fetchAlgoTasks() {
+  const data = await getDetectionTaskDetailApi(route.params.guid)
+  console.log('任务详情接口返回:', data)
+
+  if (Array.isArray(data)) {
+    algoTasks.value = data.map(normalizeAlgo)
+  } else {
+    algoTasks.value = []
+  }
+
+  console.log('归一化后的子任务:', algoTasks.value)
+}
 
 async function fetchDetail() {
   loading.value = true
   try {
-    const data = await getDetectionTaskDetailApi(route.params.guid)
-    detail.value = normalizeDetail(data)
+    await Promise.all([fetchTaskSummary(), fetchAlgoTasks()])
   } finally {
     loading.value = false
   }
@@ -63,6 +81,7 @@ function getStatusType(status) {
 function openCompare(algo) {
   console.log('预留跳转 compare 页:', algo)
 }
+
 onMounted(fetchDetail)
 </script>
 
@@ -79,25 +98,25 @@ onMounted(fetchDetail)
         <el-button round @click="fetchDetail">刷新状态</el-button>
       </section>
 
-      <section v-if="task" class="detail-layout">
+      <section class="detail-layout">
         <div class="detail-main">
           <div class="panel-card">
             <div class="panel-card__header">
               <h3>任务总览</h3>
-              <span>{{ task.guid }}</span>
+              <span>{{ task?.guid || route.params.guid }}</span>
             </div>
 
             <div class="detail-summary">
               <div class="detail-summary__preview">
-                <img v-if="task.url" :src="task.url" alt="原图预览" />
+                <img v-if="task?.url" :src="task.url" alt="原图预览" />
                 <div v-else class="task-card__placeholder">No Preview</div>
               </div>
 
               <div class="detail-summary__info">
-                <div class="summary-item"><span>Level</span><strong>{{ task.level ?? '未设置' }}</strong></div>
-                <div class="summary-item"><span>完成度</span><strong>{{ Math.round(task.completion * 100) }}%</strong></div>
-                <div class="summary-item"><span>子任务</span><strong>{{ task.completedSubTaskCount }}/{{ task.subTaskCount }}</strong></div>
-                <div class="summary-item"><span>更新时间</span><strong>{{ task.updatedAt || '暂无' }}</strong></div>
+                <div class="summary-item"><span>Level</span><strong>{{ task?.level ?? '未设置' }}</strong></div>
+                <div class="summary-item"><span>完成度</span><strong>{{ Math.round((task?.completion ?? 0) * 100) }}%</strong></div>
+                <div class="summary-item"><span>子任务</span><strong>{{ task?.completedSubTaskCount ?? 0 }}/{{ task?.subTaskCount ?? algoTasks.length }}</strong></div>
+                <div class="summary-item"><span>更新时间</span><strong>{{ task?.updatedAt || '暂无' }}</strong></div>
               </div>
             </div>
           </div>
@@ -108,15 +127,15 @@ onMounted(fetchDetail)
               <span>任务完成后可进入对比展示</span>
             </div>
 
-            <div class="algo-task-list">
-              <div v-for="algo in task.algoTasks" :key="algo.guid" class="algo-task-item">
+            <div v-if="algoTasks.length" class="algo-task-list">
+              <div v-for="algo in algoTasks" :key="algo.guid" class="algo-task-item">
                 <div class="algo-task-item__left">
                   <div class="algo-task-item__thumb">
                     <img v-if="algo.url" :src="algo.url" alt="算法图预览" />
                     <div v-else class="task-card__placeholder">No Img</div>
                   </div>
                   <div>
-                    <h4>{{ algo.type }}</h4>
+                    <h4>{{ algo.type || '未命名算法' }}</h4>
                     <p>{{ algo.guid }}</p>
                     <span>更新时间：{{ algo.updatedAt || '暂无' }}</span>
                   </div>
@@ -137,6 +156,11 @@ onMounted(fetchDetail)
                   </el-button>
                 </div>
               </div>
+            </div>
+
+            <div v-else class="empty-card">
+              <h3>暂无子任务数据</h3>
+              <p>当前任务详情接口尚未返回可展示的子任务内容。</p>
             </div>
           </div>
         </div>
