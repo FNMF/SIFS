@@ -83,7 +83,7 @@ onMounted(fetchTasks)
             </div>
 
             <div class="task-card__meta">
-              <span>Level：{{ task.level ?? '未设置' }}</span>
+              <span>Level：{{ task.level + 1 ?? '未设置' }}</span>
               <span>子任务：{{ task.completedSubTaskCount }}/{{ task.subTaskCount }}</span>
             </div>
 

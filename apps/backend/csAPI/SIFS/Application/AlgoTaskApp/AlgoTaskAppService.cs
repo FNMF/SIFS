@@ -3,6 +3,7 @@ using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Extensions;
 using SIFS.Shared.Helpers;
+using SIFS.Shared.Results;
 
 namespace SIFS.Application.AlgoTaskApp
 {
@@ -102,6 +103,30 @@ namespace SIFS.Application.AlgoTaskApp
 
                 // TODO: 日志 / 重试
                 _logger.LogError(ex, "执行算法任务 {AlgoTaskId} 失败", algoTaskId);
+            }
+        }
+        public async Task<Result<AlgoTaskDetailDto>> GetDetailAsync(Guid algoTaskId, Guid userId)
+        {
+            try
+            {
+                var dto = await _algoTaskRepo.GetDetailDtoByIdAsync(algoTaskId, userId);
+
+                if (dto == null)
+                {
+                    return Result<AlgoTaskDetailDto>.Fail(
+                        ResultCode.NotFound,
+                        "未找到对应的子任务，或无权访问该任务"
+                    );
+                }
+
+                return Result<AlgoTaskDetailDto>.Success(dto);
+            }
+            catch (Exception ex)
+            {
+                return Result<AlgoTaskDetailDto>.Fail(
+                    ResultCode.BusinessError,
+                    ex.Message
+                );
             }
         }
     }

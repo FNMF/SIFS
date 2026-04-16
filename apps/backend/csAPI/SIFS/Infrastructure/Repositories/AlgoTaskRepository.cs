@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SIFS.Application.AlgoTaskApp;
 using SIFS.Application.DetectionTaskApp;
 using SIFS.Domain.Entities;
 using SIFS.Domain.Enum;
@@ -153,6 +154,66 @@ namespace SIFS.Infrastructure.Repositories
                     UpdatedAt = x.UpdatedAt
                 };
             }).ToList();
+        }
+        public async Task<AlgoTaskDetailDto?> GetDetailDtoByIdAsync(Guid algoTaskId, Guid userId)
+        {
+            var algoTask = await _context.AlgoTasks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == algoTaskId);
+
+            if (algoTask == null)
+                return null;
+
+            var taskList = await _context.TaskLists
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == algoTask.TaskId);
+
+            if (taskList == null || taskList.UserId != userId)
+                return null;
+
+            var localFile = await _context.Localfiles
+                .AsNoTracking()
+                .Where(x => x.AlgoTaskId == algoTaskId)
+                .OrderBy(x => x.Sid)
+                .FirstOrDefaultAsync();
+
+            var resultFile = await _context.ResultFiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.AlgoTaskId == algoTaskId);
+
+            // 注意：这里 task_type_map.task_id 存的是 algo_task.id
+            var taskTypeMap = await _context.TaskTypeMaps
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.TaskId == algoTaskId);
+
+            AlgoType? algoType = null;
+            if (taskTypeMap != null)
+            {
+                algoType = await _context.AlgoTypes
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == taskTypeMap.TypeId);
+            }
+
+            return new AlgoTaskDetailDto
+            {
+                Guid = algoTask.Id,
+                OriginImageUrl = localFile == null
+                    ? string.Empty
+                    : _fileUrlBuilder.ToAbsoluteUrl(localFile.UrlLocal),
+
+                MaskUrl = string.IsNullOrWhiteSpace(resultFile?.MaskLocalUrl)
+                    ? string.Empty
+                    : _fileUrlBuilder.ToPythonUrl(resultFile!.MaskLocalUrl!),
+
+                Type = algoType?.Name ?? string.Empty,
+                Status = algoTask.Status,
+                StatusText = algoTask.Status.ToString(),
+                Level = taskList.Level,
+                IsFake = resultFile?.IsFake,
+                Confidence = resultFile?.Confidence == null
+                    ? null
+                    : Convert.ToDecimal(resultFile.Confidence.Value)
+            };
         }
         public async Task InsertAsync(AlgoTask algoTask)
         {

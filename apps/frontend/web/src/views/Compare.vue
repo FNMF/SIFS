@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getAlgoTaskDetailApi } from '../services/algoTask'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const compareData = ref({
   maskUrl: '',
   type: '',
   status: '',
+  statusText: '',
   level: '',
   isFake: null,
   confidence: null
@@ -43,11 +45,6 @@ function withNoCache(url) {
   return `${url}${connector}_t=${Date.now()}`
 }
 
-function normalizeNullableValue(value) {
-  if (value === undefined || value === null || value === '') return null
-  return value
-}
-
 function normalizeBoolean(value) {
   if (value === undefined || value === null || value === '') return null
   if (typeof value === 'boolean') return value
@@ -63,29 +60,40 @@ function normalizeNumber(value) {
   return Number.isNaN(num) ? value : num
 }
 
-function initData() {
-  compareData.value = {
-    originImageUrl: route.query.originImageUrl || '',
-    maskUrl: route.query.maskUrl || '',
-    type: route.query.type || '',
-    status: route.query.status || '',
-    level: route.query.level || '',
-    isFake: normalizeBoolean(route.query.isFake),
-    confidence: normalizeNumber(route.query.confidence)
+function normalizeCompareData(item) {
+  return {
+    originImageUrl: item.originImageUrl ?? item.OriginImageUrl ?? '',
+    maskUrl: item.maskUrl ?? item.MaskUrl ?? '',
+    type: item.type ?? item.Type ?? '',
+    status: item.status ?? item.Status ?? '',
+    statusText: item.statusText ?? item.StatusText ?? '',
+    level: item.level ?? item.Level ?? '',
+    isFake: normalizeBoolean(item.isFake ?? item.IsFake),
+    confidence: normalizeNumber(item.confidence ?? item.Confidence)
   }
 }
 
 async function loadImage(src) {
+  console.log('loading image src:', src)
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = (event) => reject(event)
+    img.onload = () => {
+      console.log('image loaded:', src)
+      resolve(img)
+    }
+    img.onerror = () => {
+      console.error('image failed:', src)
+      reject(new Error(`图片加载失败: ${src}`))
+    }
     img.src = src
   })
 }
 
 async function initCanvases() {
+    console.log('initCanvases called')
+    console.log('origin:', compareData.value.originImageUrl)
+    console.log('mask:', compareData.value.maskUrl)
   if (!compareData.value.originImageUrl || !compareData.value.maskUrl) {
     ElMessage.warning('缺少原图或 mask 地址，无法进行比对')
     return
@@ -197,6 +205,20 @@ function handleHoldEnd() {
   compareHolding.value = false
 }
 
+async function fetchCompareDetail() {
+  loading.value = true
+  try {
+    const data = await getAlgoTaskDetailApi(route.params.algoGuid)
+    compareData.value = normalizeCompareData(data)
+    await initCanvases()
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('获取对比详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 watch(maskColor, () => {
   requestAnimationFrame(() => {
     renderOverlay()
@@ -204,8 +226,7 @@ watch(maskColor, () => {
 })
 
 onMounted(() => {
-  initData()
-  initCanvases()
+  fetchCompareDetail()
 })
 </script>
 
@@ -284,18 +305,13 @@ onMounted(() => {
           </div>
 
           <div class="summary-row" v-if="compareData.type">
-            <span>算法类型</span>
+            <span>算法类型： </span>
             <strong>{{ compareData.type }}</strong>
           </div>
 
           <div class="summary-row" v-if="compareData.level !== ''">
-            <span>Level</span>
-            <strong>{{ compareData.level }}</strong>
-          </div>
-
-          <div class="summary-row" v-if="compareData.status !== ''">
-            <span>状态</span>
-            <strong>{{ compareData.status }}</strong>
+            <span>算法等级： </span>
+            <strong>{{ compareData.level + 1 }}</strong>
           </div>
         </div>
       </aside>
@@ -309,7 +325,7 @@ onMounted(() => {
 
         <div class="metrics-grid">
           <div class="metric-item" v-if="compareData.isFake !== null">
-            <span>Is Fake</span>
+            <span>鉴定结果</span>
             <strong>{{ String(compareData.isFake) }}</strong>
           </div>
 

@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute , useRouter} from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import { getDetectionTaskDetailApi } from '../services/detectionTask'
 
 const route = useRoute()
 const router = useRouter()
+
 const loading = ref(false)
 const detail = ref(null)
 
@@ -15,6 +16,7 @@ function normalizeAlgo(item) {
     url: item.url ?? item.Url ?? item.maskUrl ?? item.MaskUrl ?? '',
     type: item.type ?? item.Type ?? item.name ?? item.Name ?? '未知算法',
     status: item.status ?? item.Status ?? 0,
+    statusText: item.statusText ?? item.StatusText ?? '',
     level: item.level ?? item.Level,
     updatedAt: item.updatedAt ?? item.UpdatedAt ?? ''
   }
@@ -47,7 +49,8 @@ async function fetchDetail() {
   }
 }
 
-function getStatusText(status) {
+function getStatusText(status, statusText) {
+  if (statusText) return statusText
   if (status === 2) return '已完成'
   if (status === 1) return '处理中'
   if (status === 3) return '失败'
@@ -62,18 +65,7 @@ function getStatusType(status) {
 }
 
 function openCompare(algo) {
-  router.push({
-    path: `/compare/${algo.guid}`,
-    query: {
-      originImageUrl: task.value?.previewImageUrl || '',
-      maskUrl: algo.url || '',
-      type: algo.type || '',
-      status: algo.status ?? '',
-      level: algo.level ?? '',
-      isFake: algo.isFake ?? '',
-      confidence: algo.confidence ?? ''
-    }
-  })
+  router.push(`/compare/${algo.guid}`)
 }
 
 onMounted(fetchDetail)
@@ -111,7 +103,7 @@ onMounted(fetchDetail)
               </div>
 
               <div class="detail-summary__info">
-                <div class="summary-item"><span>Level</span><strong>{{ task.level ?? '未设置' }}</strong></div>
+                <div class="summary-item"><span>Level</span><strong>{{ task.level + 1 ?? '未设置' }}</strong></div>
                 <div class="summary-item"><span>完成度</span><strong>{{ Math.round(task.completion * 100) }}%</strong></div>
                 <div class="summary-item"><span>子任务</span><strong>{{ task.completedSubTaskCount }}/{{ task.subTaskCount }}</strong></div>
                 <div class="summary-item"><span>更新时间</span><strong>{{ task.updatedAt || '暂无' }}</strong></div>
@@ -142,7 +134,7 @@ onMounted(fetchDetail)
 
                 <div class="algo-task-item__right">
                   <el-tag :type="getStatusType(algo.status)">
-                    {{ getStatusText(algo.status) }}
+                    {{ getStatusText(algo.status, algo.statusText) }}
                   </el-tag>
                   <el-button
                     type="primary"
