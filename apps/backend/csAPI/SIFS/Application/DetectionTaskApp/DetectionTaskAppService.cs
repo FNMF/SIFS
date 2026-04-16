@@ -133,23 +133,44 @@ namespace SIFS.Application.DetectionTaskApp
                 return Result<List<DetectionTaskReadDto>>.Fail(ResultCode.BusinessError, ex.Message);
             }
         }
-        public async Task<Result<List<AlgoReadDto>>> GetAsync(Guid guid, Guid userId)
+        public async Task<Result<DetectionTaskDetailDto>> GetAsync(Guid guid, Guid userId)
         {
             try
             {
                 var taskListResult = await _taskListRepo.GetTaskListByIdAsync(guid);
                 if (!taskListResult.IsSuccess)
-                    return Result<List<AlgoReadDto>>.Fail(taskListResult.Code, taskListResult.Message);
+                    return Result<DetectionTaskDetailDto>.Fail(taskListResult.Code, taskListResult.Message);
 
                 if (taskListResult.Data.UserId != userId)
-                    return Result<List<AlgoReadDto>>.Fail(ResultCode.Forbidden, "无权访问该任务");
+                    return Result<DetectionTaskDetailDto>.Fail(ResultCode.Forbidden, "无权访问该任务");
 
-                var data = await _algoTaskRepo.GetAllReadDtosByTaskIdAsync(guid);
-                return Result<List<AlgoReadDto>>.Success(data);
+                var task = taskListResult.Data;
+
+                var algoTasks = await _algoTaskRepo.GetAllReadDtosByTaskIdAsync(guid);
+
+                var imageUrls = await _taskListRepo.GetImageUrlsByTaskIdAsync(guid);
+
+                var dto = new DetectionTaskDetailDto
+                {
+                    Guid = task.Id,
+                    ImageUrls = imageUrls,
+                    PreviewImageUrl = imageUrls.FirstOrDefault() ?? string.Empty,
+                    ImageCount = imageUrls.Count,
+                    SubTaskCount = algoTasks.Count,
+                    CompletedSubTaskCount = algoTasks.Count(x => x.Status == (int)AlgoTaskStatus.done),
+                    Completion = algoTasks.Count == 0
+                        ? 0m
+                        : Math.Round((decimal)algoTasks.Count(x => x.Status == (int)AlgoTaskStatus.done) / algoTasks.Count, 4),
+                    Level = task.Level,
+                    UpdatedAt = task.UpdatedAt,
+                    AlgoTasks = algoTasks
+                };
+
+                return Result<DetectionTaskDetailDto>.Success(dto);
             }
             catch (Exception ex)
             {
-                return Result<List<AlgoReadDto>>.Fail(ResultCode.BusinessError, ex.Message);
+                return Result<DetectionTaskDetailDto>.Fail(ResultCode.BusinessError, ex.Message);
             }
         }
     }

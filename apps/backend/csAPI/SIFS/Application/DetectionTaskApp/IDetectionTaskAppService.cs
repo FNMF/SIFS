@@ -7,6 +7,6 @@ namespace SIFS.Application.DetectionTaskApp
     {
         Task<Result<Guid>> CreateAsync(CreateDetectionTaskDto dto, Guid userId);
         Task<Result<List<DetectionTaskReadDto>>> GetAllAsync(Guid userId);
-        Task<Result<List<AlgoReadDto>>> GetAsync(Guid guid, Guid userId);
+        Task<Result<List<DetectionTaskDetailDto>>> GetAsync(Guid guid, Guid userId);
     }
 }

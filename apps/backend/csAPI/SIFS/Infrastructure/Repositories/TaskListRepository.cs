@@ -102,47 +102,74 @@ namespace SIFS.Infrastructure.Repositories
                 .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
                 .ToListAsync();
 
+            var taskImageMap = algoTasks
+                .Join(localFiles,
+                    algo => algo.Id,
+                    file => file.AlgoTaskId,
+                    (algo, file) => new
+                    {
+                        TaskId = algo.TaskId,
+                        Url = file.UrlLocal,
+                        Sid = file.Sid
+                    })
+                .GroupBy(x => x.TaskId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g
+                        .OrderBy(x => x.Sid)
+                        .Select(x => x.Url)
+                        .Distinct()
+                        .ToList()
+                );
+
             return taskLists.Select(task =>
             {
-                var currentAlgoTasks = algoTasks
-                    .Where(x => x.TaskId == task.Id)
-                    .ToList();
-
-                var currentAlgoTaskIds = currentAlgoTasks
-                    .Select(x => x.Id)
-                    .ToHashSet();
-
-                var currentLocalFiles = localFiles
-                    .Where(x => currentAlgoTaskIds.Contains(x.AlgoTaskId))
-                    .OrderBy(x => x.Sid)
-                    .ToList();
+                var currentAlgoTasks = algoTasks.Where(x => x.TaskId == task.Id).ToList();
 
                 var subTaskCount = currentAlgoTasks.Count;
                 var completedSubTaskCount = currentAlgoTasks.Count(x => x.Status == (int)AlgoTaskStatus.done);
-
                 var completion = subTaskCount == 0
                     ? 0m
                     : Math.Round((decimal)completedSubTaskCount / subTaskCount, 4);
 
-                // 父任务原图：从 Localfile 里取 sid 最小的一张
-                // 因为当前创建逻辑里，同一张原图会为不同 type 生成多条 Localfile，这里取第一张即可
-                var originalUrl = currentLocalFiles
-                    .Select(x => x.UrlLocal)
-                    .FirstOrDefault() ?? string.Empty;
+                taskImageMap.TryGetValue(task.Id, out var imageUrls);
+                imageUrls ??= new List<string>();
 
                 return new DetectionTaskReadDto
                 {
                     Guid = task.Id,
-                    Url = string.IsNullOrWhiteSpace(originalUrl)
-                            ? string.Empty
-                            : _fileUrlBuilder.ToPythonUrl(originalUrl),
                     SubTaskCount = subTaskCount,
                     CompletedSubTaskCount = completedSubTaskCount,
                     Completion = completion,
+                    PreviewImageUrl = imageUrls.FirstOrDefault() ?? string.Empty,
+                    ImageCount = imageUrls.Count,
                     Level = task.Level,
                     UpdatedAt = task.UpdatedAt
                 };
             }).ToList();
+        }
+        public async Task<List<string>> GetImageUrlsByTaskIdAsync(Guid taskId)
+        {
+            var algoTasks = await _context.AlgoTasks
+                .AsNoTracking()
+                .Where(x => x.TaskId == taskId)
+                .ToListAsync();
+
+            if (!algoTasks.Any())
+                return new List<string>();
+
+            var algoTaskIds = algoTasks.Select(x => x.Id).ToList();
+
+            var localFiles = await _context.Localfiles
+                .AsNoTracking()
+                .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
+                .OrderBy(x => x.Sid)
+                .ToListAsync();
+
+            return localFiles
+                .Select(x => x.UrlLocal)
+                .Distinct()
+                .ToList();
         }
         public async Task InsertAsync(TaskList taskList)
         {
