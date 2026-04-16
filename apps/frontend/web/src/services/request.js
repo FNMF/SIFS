@@ -2,7 +2,7 @@ import { ElMessage } from 'element-plus'
 import { tokenStorage } from '../utils/storage'
 import { useAuthStore } from '../stores/auth'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5220'
+const API_BASE_URL = ''
 
 let isRefreshing = false
 let pendingQueue = []
