@@ -712,87 +712,136 @@ button {
     radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 22%),
     linear-gradient(180deg, #f6f9ff 0%, #ffffff 100%);
 }
-
-.app-header {
+}
+.header {
   position: sticky;
   top: 0;
-  z-index: 50;
-  background: rgba(255, 255, 255, 0.84);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(14px);
+  z-index: 40;
+  backdrop-filter: blur(16px);
+  transition: all 0.3s ease;
 }
 
-.app-header__inner {
-  min-height: 76px;
+.header:not(.header--app) {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.header--app {
+  background: rgba(248, 250, 252, 0.92);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.header--shadow {
+  box-shadow: 0 10px 30px rgba(17, 30, 61, 0.08);
+}
+
+.header__inner {
+  min-height: 78px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
 }
 
-.app-header__brand {
+.header__brand {
   display: flex;
   align-items: center;
   gap: 14px;
-  cursor: pointer;
 }
 
-.app-header__logo {
-  width: 42px;
-  height: 42px;
+.brand__logo {
+  width: 46px;
+  height: 46px;
   border-radius: 14px;
   display: grid;
   place-items: center;
   color: #fff;
   font-weight: 800;
+  letter-spacing: 1px;
   background: linear-gradient(135deg, #1d4ed8, #38bdf8);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.28);
 }
 
-.app-header__title {
-  font-size: 16px;
+.brand__title {
+  font-size: 18px;
   font-weight: 700;
-  color: #142033;
 }
 
-.app-header__subtitle {
+.brand__subtitle {
   font-size: 12px;
-  color: #64748b;
-  margin-top: 3px;
+  color: var(--text-light);
+  margin-top: 4px;
 }
 
-.app-header__nav {
+.header__nav {
   display: flex;
   align-items: center;
+  gap: 28px;
+  color: #334155;
+  font-size: 15px;
+}
+
+.header__nav a:hover {
+  color: var(--primary);
+}
+
+.header__nav--app {
   gap: 10px;
 }
 
-.app-header__nav-item {
+.header__nav-btn {
   border: none;
   background: transparent;
   padding: 10px 16px;
   border-radius: 999px;
   color: #475569;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.app-header__nav-item.is-active {
-  color: #1d4ed8;
-  background: rgba(37, 99, 235, 0.08);
+.header__nav-btn:hover {
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.06);
 }
 
-.app-header__actions {
+.header__nav-btn.is-active {
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.header__actions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.app-header__welcome {
+.user-welcome {
   font-size: 14px;
   color: #1e293b;
   font-weight: 600;
   white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .header__nav {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .header__inner {
+    flex-wrap: wrap;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .header__actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 .page-section {
@@ -1187,5 +1236,4 @@ button {
   color: #1e293b;
   font-weight: 600;
   white-space: nowrap;
-}
 }

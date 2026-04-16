@@ -28,7 +28,12 @@ async function fetchAlgoList() {
   loadingAlgo.value = true
   try {
     const data = await getAlgoListApi()
+    console.log('算法列表返回:', data)
     algoOptions.value = normalizeAlgoList(data)
+  } catch (error) {
+    console.error('获取算法列表失败:', error)
+    ElMessage.error('获取算法列表失败，请检查登录状态或接口返回')
+    algoOptions.value = []
   } finally {
     loadingAlgo.value = false
   }
@@ -99,9 +104,6 @@ onMounted(fetchAlgoList)
           <h1>新建识别任务</h1>
           <p>上传一张或多张卫星图片，选择算法后提交任务。系统将进入后端队列处理，并在完成后更新结果状态。</p>
         </div>
-        <el-button type="primary" size="large" :loading="submitting" @click="handleSubmit">
-          确认提交
-        </el-button>
       </section>
 
       <section class="upload-layout">
@@ -116,7 +118,7 @@ onMounted(fetchAlgoList)
               drag
               multiple
               :auto-upload="false"
-              list-type="picture-card"
+              :show-file-list="false"
               :on-change="handleFileChange"
               :on-remove="handleRemove"
             >
@@ -126,6 +128,13 @@ onMounted(fetchAlgoList)
                 <div class="upload-dropzone__desc">建议上传清晰卫星影像，支持多图批量任务</div>
               </div>
             </el-upload>
+
+            <div v-if="fileList.length" class="upload-preview-grid">
+              <div v-for="file in fileList" :key="file.uid" class="upload-preview-card">
+                <img :src="file.url" :alt="file.name" />
+                <span>{{ file.name }}</span>
+              </div>
+            </div>
           </div>
 
           <div class="panel-card">
@@ -148,10 +157,10 @@ onMounted(fetchAlgoList)
             <div class="level-box">
               <div class="level-box__label">识别等级（可选）</div>
               <el-select v-model="level" clearable placeholder="请选择识别等级">
-                <el-option label="Level 1" :value="1" />
-                <el-option label="Level 2" :value="2" />
-                <el-option label="Level 3" :value="3" />
-                <el-option label="Level 4" :value="4" />
+                <el-option label="Level 1 (速度最快,质量最低)" :value="0" />
+                <el-option label="Level 2" :value="1" />
+                <el-option label="Level 3" :value="2" />
+                <el-option label="Level 4 (速度最慢,质量最高)" :value="3" />
               </el-select>
             </div>
           </div>
@@ -179,7 +188,7 @@ onMounted(fetchAlgoList)
               </div>
               <div class="summary-item">
                 <span>识别等级</span>
-                <strong>{{ level ?? '未设置' }}</strong>
+                <strong>{{ level + 1 ?? '未设置' }}</strong>
               </div>
             </div>
 
