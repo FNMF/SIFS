@@ -144,7 +144,9 @@ namespace SIFS.Infrastructure.Repositories
                 return new AlgoReadDto
                 {
                     Guid = x.Id,
-                    Url = _fileUrlBuilder.ToPythonUrl(url?? string.Empty),
+                    Url = string.IsNullOrWhiteSpace(url)
+                            ? string.Empty
+                            : _fileUrlBuilder.ToPythonUrl(url),
                     Type = typeName,
                     Status = x.Status,
                     Level = taskList.Level,

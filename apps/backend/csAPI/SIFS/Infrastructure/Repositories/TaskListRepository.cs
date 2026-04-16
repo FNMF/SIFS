@@ -133,7 +133,9 @@ namespace SIFS.Infrastructure.Repositories
                 return new DetectionTaskReadDto
                 {
                     Guid = task.Id,
-                    Url = _fileUrlBuilder.ToPythonUrl(originalUrl ?? string.Empty),
+                    Url = string.IsNullOrWhiteSpace(originalUrl)
+                            ? string.Empty
+                            : _fileUrlBuilder.ToPythonUrl(originalUrl),
                     SubTaskCount = subTaskCount,
                     CompletedSubTaskCount = completedSubTaskCount,
                     Completion = completion,
