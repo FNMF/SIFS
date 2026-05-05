@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SIFS.Infrastructure.Database;
 
@@ -11,9 +12,11 @@ using SIFS.Infrastructure.Database;
 namespace SIFS.Migrations
 {
     [DbContext(typeof(SIFSContext))]
-    partial class SIFSContextModelSnapshot : ModelSnapshot
+    [Migration("20260505081016_AddOperationLogs")]
+    partial class AddOperationLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,9 +133,9 @@ namespace SIFS.Migrations
                         .HasColumnName("id")
                         .IsFixedLength();
 
-                    b.Property<byte[]>("ActorId")
+                    b.Property<Guid?>("ActorId")
                         .HasMaxLength(16)
-                        .HasColumnType("binary(16)")
+                        .HasColumnType("char(16)")
                         .HasColumnName("actor_id")
                         .IsFixedLength();
 

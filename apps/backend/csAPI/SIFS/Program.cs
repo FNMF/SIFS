@@ -30,6 +30,7 @@ namespace SIFS
             builder.Services.AddControllers();
             builder.Services.AddSingleton<IEventBus, EventBus>();
             builder.Services.AddSingleton<AppEventLoggingListener>();
+            builder.Services.AddSingleton<OperationLogListener>();
             builder.Services.AddHttpClient();
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
@@ -124,6 +125,7 @@ namespace SIFS
 
             var eventBus = app.Services.GetRequiredService<IEventBus>();
             app.Services.GetRequiredService<AppEventLoggingListener>().RegisterAll(eventBus);
+            app.Services.GetRequiredService<OperationLogListener>().RegisterAll(eventBus);
 
             // Configure the HTTP request pipeline.
 

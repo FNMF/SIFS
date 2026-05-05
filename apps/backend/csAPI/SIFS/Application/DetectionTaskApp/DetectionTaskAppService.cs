@@ -24,6 +24,7 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly IAlgoTaskQueue _queue;
         private readonly IPermissionService _permissionService;
         private readonly IEventBus _eventBus;
+        private readonly IAppEventRequestContextFactory _requestContextFactory;
         private readonly ILogger<DetectionTaskAppService> _logger;
 
         public DetectionTaskAppService(
@@ -35,6 +36,7 @@ namespace SIFS.Application.DetectionTaskApp
             IAlgoTaskQueue queue,
             IPermissionService permissionService,
             IEventBus eventBus,
+            IAppEventRequestContextFactory requestContextFactory,
             ILogger<DetectionTaskAppService> logger)
         {
             _localfileService = localfileService;
@@ -45,6 +47,7 @@ namespace SIFS.Application.DetectionTaskApp
             _queue = queue;
             _permissionService = permissionService;
             _eventBus = eventBus;
+            _requestContextFactory = requestContextFactory;
             _logger = logger;
         }
 
@@ -133,7 +136,8 @@ namespace SIFS.Application.DetectionTaskApp
                         ["image_count"] = normalizedImages.Count,
                         ["type_count"] = dto.Types.Count,
                         ["level"] = dto.Level
-                    }
+                    },
+                    RequestContext = _requestContextFactory.Create("create detection task")
                 });
                 return Result<Guid>.Success(detectionTask.Id);
             }
@@ -190,6 +194,15 @@ namespace SIFS.Application.DetectionTaskApp
                     UpdatedAt = task.UpdatedAt,
                     AlgoTasks = algoTasks
                 };
+
+                _eventBus.Publish(new AppEvent
+                {
+                    EventType = AppEventTypes.TaskViewed,
+                    ActorId = userId,
+                    TargetType = "detection_task",
+                    TargetId = task.Id.ToString(),
+                    RequestContext = _requestContextFactory.Create("view detection task")
+                });
 
                 return Result<DetectionTaskDetailDto>.Success(dto);
             }

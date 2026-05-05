@@ -16,13 +16,15 @@ namespace SIFS.Application.Identity
         private readonly ICurrentService _currentService;
         private readonly IJwtHelper _jwtHelper;
         private readonly IEventBus _eventBus;
+        private readonly IAppEventRequestContextFactory _requestContextFactory;
         public UserLoginService(
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             IRefreshTokenService refreshTokenService,
             ICurrentService currentService,
             IJwtHelper jwtHelper,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IAppEventRequestContextFactory requestContextFactory)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
@@ -30,6 +32,7 @@ namespace SIFS.Application.Identity
             _currentService = currentService;
             _jwtHelper = jwtHelper;
             _eventBus = eventBus;
+            _requestContextFactory = requestContextFactory;
         }
         public async Task<Result<LoginTokenResult>> LoginAsync(UserLoginDto userLoginDto)
         {
@@ -63,7 +66,8 @@ namespace SIFS.Application.Identity
                 Payload = new Dictionary<string, object?>
                 {
                     ["account"] = user.Account
-                }
+                },
+                RequestContext = _requestContextFactory.Create("user login", user.Account)
             });
             return Result<LoginTokenResult>.Success(loginTokenResult);
         }

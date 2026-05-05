@@ -17,6 +17,11 @@ namespace SIFS.Infrastructure.Database
                 v => new Guid(v)
             );
 
+            var nullableGuidToBytesConverter = new ValueConverter<Guid?, byte[]?>(
+                v => v.HasValue ? v.Value.ToByteArray() : null,
+                v => v == null ? null : new Guid(v)
+            );
+
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 foreach (var property in entityType.GetProperties())
@@ -25,6 +30,11 @@ namespace SIFS.Infrastructure.Database
                     {
                         property.SetColumnType("binary(16)");
                         property.SetValueConverter(guidToBytesConverter);
+                    }
+                    else if (property.ClrType == typeof(Guid?))
+                    {
+                        property.SetColumnType("binary(16)");
+                        property.SetValueConverter(nullableGuidToBytesConverter);
                     }
                 }
             }

@@ -29,6 +29,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<Permission> Permissions { get; set; }
 
+    public virtual DbSet<OperationLog> OperationLogs { get; set; }
+
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
@@ -100,6 +102,23 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        modelBuilder.Entity<OperationLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.ActorId, "ix_operation_logs_actor_id");
+            entity.HasIndex(e => e.ActorUsername, "ix_operation_logs_actor_username");
+            entity.HasIndex(e => e.OperationType, "ix_operation_logs_operation_type");
+            entity.HasIndex(e => e.TargetType, "ix_operation_logs_target_type");
+            entity.HasIndex(e => e.Success, "ix_operation_logs_success");
+            entity.HasIndex(e => e.CreatedAt, "ix_operation_logs_created_at");
+
+            entity.Property(e => e.Id).IsFixedLength();
+            entity.Property(e => e.ActorId).IsFixedLength();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Success).HasDefaultValue(true);
         });
 
         modelBuilder.Entity<UserRole>(entity =>
