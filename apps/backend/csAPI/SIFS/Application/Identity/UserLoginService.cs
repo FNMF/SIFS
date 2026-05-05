@@ -4,6 +4,7 @@ using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Helpers.JWT;
 using SIFS.Shared.Results;
+using SIFS.Shared.Extensions.EventBus;
 
 namespace SIFS.Application.Identity
 {
@@ -14,13 +15,21 @@ namespace SIFS.Application.Identity
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly ICurrentService _currentService;
         private readonly IJwtHelper _jwtHelper;
-        public UserLoginService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository, IRefreshTokenService refreshTokenService, ICurrentService currentService, IJwtHelper jwtHelper)
+        private readonly IEventBus _eventBus;
+        public UserLoginService(
+            IUserRepository userRepository,
+            IRefreshTokenRepository refreshTokenRepository,
+            IRefreshTokenService refreshTokenService,
+            ICurrentService currentService,
+            IJwtHelper jwtHelper,
+            IEventBus eventBus)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _refreshTokenService = refreshTokenService;
             _currentService = currentService;
             _jwtHelper = jwtHelper;
+            _eventBus = eventBus;
         }
         public async Task<Result<LoginTokenResult>> LoginAsync(UserLoginDto userLoginDto)
         {
@@ -45,6 +54,17 @@ namespace SIFS.Application.Identity
                 ExpiresIn = _jwtHelper.GetExpiresMinutes(),
                 UserReadDto = userReadDto,
             };
+            _eventBus.Publish(new AppEvent
+            {
+                EventType = AppEventTypes.UserLogin,
+                ActorId = user.Id,
+                TargetType = "user",
+                TargetId = user.Id.ToString(),
+                Payload = new Dictionary<string, object?>
+                {
+                    ["account"] = user.Account
+                }
+            });
             return Result<LoginTokenResult>.Success(loginTokenResult);
         }
         public async Task<Result<string>> RefreshTokenAsync(string refreshToken)

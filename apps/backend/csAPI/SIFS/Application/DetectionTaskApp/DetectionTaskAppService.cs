@@ -10,6 +10,7 @@ using SIFS.Domain.Enum;
 using System.Diagnostics;
 using SIFS.Infrastructure.External;
 using SIFS.Application.Rbac;
+using SIFS.Shared.Extensions.EventBus;
 
 namespace SIFS.Application.DetectionTaskApp
 {
@@ -22,6 +23,7 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly ITaskTypeMapRepository _taskTypeMapRepo;
         private readonly IAlgoTaskQueue _queue;
         private readonly IPermissionService _permissionService;
+        private readonly IEventBus _eventBus;
         private readonly ILogger<DetectionTaskAppService> _logger;
 
         public DetectionTaskAppService(
@@ -32,6 +34,7 @@ namespace SIFS.Application.DetectionTaskApp
             ITaskTypeMapRepository taskTypeMapRepo,
             IAlgoTaskQueue queue,
             IPermissionService permissionService,
+            IEventBus eventBus,
             ILogger<DetectionTaskAppService> logger)
         {
             _localfileService = localfileService;
@@ -41,6 +44,7 @@ namespace SIFS.Application.DetectionTaskApp
             _taskTypeMapRepo = taskTypeMapRepo;
             _queue = queue;
             _permissionService = permissionService;
+            _eventBus = eventBus;
             _logger = logger;
         }
 
@@ -118,6 +122,19 @@ namespace SIFS.Application.DetectionTaskApp
                     }
                 }
                 // 返回任务ID
+                _eventBus.Publish(new AppEvent
+                {
+                    EventType = AppEventTypes.TaskCreated,
+                    ActorId = userId,
+                    TargetType = "detection_task",
+                    TargetId = detectionTask.Id.ToString(),
+                    Payload = new Dictionary<string, object?>
+                    {
+                        ["image_count"] = normalizedImages.Count,
+                        ["type_count"] = dto.Types.Count,
+                        ["level"] = dto.Level
+                    }
+                });
                 return Result<Guid>.Success(detectionTask.Id);
             }
             catch (Exception ex)

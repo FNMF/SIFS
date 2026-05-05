@@ -28,7 +28,8 @@ namespace SIFS
             var jwtKey = builder.Configuration["Jwt:SecretKey"];
             // Add services to the container.
             builder.Services.AddControllers();
-            builder.Services.AddScoped<EventBus>();
+            builder.Services.AddSingleton<IEventBus, EventBus>();
+            builder.Services.AddSingleton<AppEventLoggingListener>();
             builder.Services.AddHttpClient();
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
@@ -120,6 +121,9 @@ namespace SIFS
             });
 
             var app = builder.Build();
+
+            var eventBus = app.Services.GetRequiredService<IEventBus>();
+            app.Services.GetRequiredService<AppEventLoggingListener>().RegisterAll(eventBus);
 
             // Configure the HTTP request pipeline.
 
