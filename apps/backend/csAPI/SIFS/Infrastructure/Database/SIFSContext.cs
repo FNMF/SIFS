@@ -21,6 +21,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<AlgoType> AlgoTypes { get; set; }
 
+    public virtual DbSet<AlgoModel> AlgoModels { get; set; }
+
     public virtual DbSet<Localfile> Localfiles { get; set; }
 
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -66,6 +68,19 @@ public partial class SIFSContext : DbContext
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+        });
+
+        modelBuilder.Entity<AlgoModel>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.Name, "ux_algo_models_name").IsUnique();
+            entity.HasIndex(e => e.Enabled, "ix_algo_models_enabled");
+            entity.HasIndex(e => e.CreatedAt, "ix_algo_models_created_at");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Enabled).HasDefaultValue(false);
         });
 
         modelBuilder.Entity<Localfile>(entity =>

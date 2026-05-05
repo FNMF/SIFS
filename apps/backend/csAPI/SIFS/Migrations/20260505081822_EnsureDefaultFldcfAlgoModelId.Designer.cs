@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SIFS.Infrastructure.Database;
 
@@ -11,9 +12,11 @@ using SIFS.Infrastructure.Database;
 namespace SIFS.Migrations
 {
     [DbContext(typeof(SIFSContext))]
-    partial class SIFSContextModelSnapshot : ModelSnapshot
+    [Migration("20260505081822_EnsureDefaultFldcfAlgoModelId")]
+    partial class EnsureDefaultFldcfAlgoModelId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -1,23 +1,23 @@
-﻿using Microsoft.Extensions.Options;
+using SIFS.Application.AlgoModels;
 
 namespace SIFS.Infrastructure.External
 {
-    public class AiService:IAiService
+    public class AiService : IAiService
     {
         private readonly HttpClient _httpClient;
-        private readonly AiServiceOptions _options;
+        private readonly IAlgoModelService _algoModelService;
 
-        public AiService(HttpClient httpClient, IOptions<AiServiceOptions> options)
+        public AiService(HttpClient httpClient, IAlgoModelService algoModelService)
         {
             _httpClient = httpClient;
-            _options = options.Value;
+            _algoModelService = algoModelService;
         }
 
-        // 传入 type，而不是写死
         public async Task<DetectionResult> DetectAsync(AiServiceType type, string imageUrl, int? level)
         {
-            if (!_options.Endpoints.TryGetValue(type, out var url))
-                throw new NotSupportedException($"Unsupported type: {type}");
+            var algoResult = await _algoModelService.GetEnabledAlgoByIdAsync((int)type);
+            if (!algoResult.IsSuccess)
+                throw new InvalidOperationException(algoResult.Message);
 
             var payload = new
             {
@@ -25,7 +25,7 @@ namespace SIFS.Infrastructure.External
                 level = level
             };
 
-            var response = await _httpClient.PostAsJsonAsync(url, payload);
+            var response = await _httpClient.PostAsJsonAsync(algoResult.Data.ApiUrl, payload);
 
             response.EnsureSuccessStatusCode();
 
