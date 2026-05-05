@@ -11,7 +11,7 @@ namespace SIFS.Infrastructure.Repositories
         Task<Result<AlgoTask>> GetTaskByIdAsync(Guid id);
         Task<Result<TaskItem>> GetAggregateByGuidAsync(Guid id);
         Task<List<AlgoReadDto>> GetAllReadDtosByTaskIdAsync(Guid taskId);
-        Task<AlgoTaskDetailDto?> GetDetailDtoByIdAsync(Guid algoTaskId, Guid userId);
+        Task<AlgoTaskDetailDto?> GetDetailDtoByIdAsync(Guid algoTaskId, Guid userId, bool canViewAllTasks = false);
         Task InsertAsync(AlgoTask algoTask);
         Task UpdateAsync(AlgoTask algoTask);
     }

@@ -25,6 +25,14 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
 
+    public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<Permission> Permissions { get; set; }
+
+    public virtual DbSet<UserRole> UserRoles { get; set; }
+
+    public virtual DbSet<RolePermission> RolePermissions { get; set; }
+
     public virtual DbSet<ResultFile> ResultFiles { get; set; }
 
     public virtual DbSet<TaskList> TaskLists { get; set; }
@@ -72,6 +80,49 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.UserId).IsFixedLength();
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.Name, "ux_roles_name").IsUnique();
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.Code, "ux_permissions_code").IsUnique();
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.UserId, "ix_user_roles_user_id");
+            entity.HasIndex(e => e.RoleId, "ix_user_roles_role_id");
+            entity.HasIndex(e => new { e.UserId, e.RoleId }, "ux_user_roles_user_id_role_id").IsUnique();
+
+            entity.Property(e => e.Id).IsFixedLength();
+            entity.Property(e => e.UserId).IsFixedLength();
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.RoleId, "ix_role_permissions_role_id");
+            entity.HasIndex(e => e.PermissionId, "ix_role_permissions_permission_id");
+            entity.HasIndex(e => new { e.RoleId, e.PermissionId }, "ux_role_permissions_role_id_permission_id").IsUnique();
+
+            entity.Property(e => e.Id).IsFixedLength();
         });
 
         modelBuilder.Entity<ResultFile>(entity =>

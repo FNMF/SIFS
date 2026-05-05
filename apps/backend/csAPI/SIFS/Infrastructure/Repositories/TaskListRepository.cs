@@ -85,6 +85,19 @@ namespace SIFS.Infrastructure.Repositories
                 .OrderByDescending(x => x.UpdatedAt)
                 .ToListAsync();
 
+            return await BuildReadDtosAsync(taskLists);
+        }
+        public async Task<List<DetectionTaskReadDto>> GetAllReadDtosAsync()
+        {
+            var taskLists = await _context.TaskLists
+                .AsNoTracking()
+                .OrderByDescending(x => x.UpdatedAt)
+                .ToListAsync();
+
+            return await BuildReadDtosAsync(taskLists);
+        }
+        private async Task<List<DetectionTaskReadDto>> BuildReadDtosAsync(List<TaskList> taskLists)
+        {
             if (!taskLists.Any())
                 return new List<DetectionTaskReadDto>();
 

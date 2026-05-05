@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SIFS.Application.AlgoTaskApp;
 using SIFS.Infrastructure.Identity;
+using SIFS.Shared.Results;
 
 namespace SIFS.Api.DetectionTask
 {
     [ApiController]
     [Route("api/algo-task")]
+    [Authorize]
     public class AlgoTaskController : ControllerBase
     {
         private readonly IAlgoTaskAppService _algoTaskAppService;
@@ -26,7 +29,13 @@ namespace SIFS.Api.DetectionTask
             if (result.IsSuccess)
                 return Ok(result.Data);
 
-            return BadRequest(result.Message);
+            return result.Code switch
+            {
+                ResultCode.Unauthorized => Unauthorized(result.Message),
+                ResultCode.Forbidden => Forbid(),
+                ResultCode.NotFound => NotFound(result.Message),
+                _ => BadRequest(result.Message)
+            };
         }
     }
 }

@@ -155,7 +155,7 @@ namespace SIFS.Infrastructure.Repositories
                 };
             }).ToList();
         }
-        public async Task<AlgoTaskDetailDto?> GetDetailDtoByIdAsync(Guid algoTaskId, Guid userId)
+        public async Task<AlgoTaskDetailDto?> GetDetailDtoByIdAsync(Guid algoTaskId, Guid userId, bool canViewAllTasks = false)
         {
             var algoTask = await _context.AlgoTasks
                 .AsNoTracking()
@@ -168,7 +168,7 @@ namespace SIFS.Infrastructure.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == algoTask.TaskId);
 
-            if (taskList == null || taskList.UserId != userId)
+            if (taskList == null || (!canViewAllTasks && taskList.UserId != userId))
                 return null;
 
             var localFile = await _context.Localfiles

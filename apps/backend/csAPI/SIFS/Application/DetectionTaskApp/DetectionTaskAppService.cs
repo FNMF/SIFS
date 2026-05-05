@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using SIFS.Domain.Enum;
 using System.Diagnostics;
 using SIFS.Infrastructure.External;
+using SIFS.Application.Rbac;
 
 namespace SIFS.Application.DetectionTaskApp
 {
@@ -20,6 +21,7 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly ILocalfileRepository _fileRepo;
         private readonly ITaskTypeMapRepository _taskTypeMapRepo;
         private readonly IAlgoTaskQueue _queue;
+        private readonly IPermissionService _permissionService;
         private readonly ILogger<DetectionTaskAppService> _logger;
 
         public DetectionTaskAppService(
@@ -29,6 +31,7 @@ namespace SIFS.Application.DetectionTaskApp
             ILocalfileRepository fileRepo,
             ITaskTypeMapRepository taskTypeMapRepo,
             IAlgoTaskQueue queue,
+            IPermissionService permissionService,
             ILogger<DetectionTaskAppService> logger)
         {
             _localfileService = localfileService;
@@ -37,6 +40,7 @@ namespace SIFS.Application.DetectionTaskApp
             _fileRepo = fileRepo;
             _taskTypeMapRepo = taskTypeMapRepo;
             _queue = queue;
+            _permissionService = permissionService;
             _logger = logger;
         }
 
@@ -125,7 +129,11 @@ namespace SIFS.Application.DetectionTaskApp
         {
             try
             {
-                var data = await _taskListRepo.GetAllReadDtosByUserIdAsync(userId);
+                var canViewAll = await CanViewAllTasksAsync(userId);
+                var data = canViewAll
+                    ? await _taskListRepo.GetAllReadDtosAsync()
+                    : await _taskListRepo.GetAllReadDtosByUserIdAsync(userId);
+
                 return Result<List<DetectionTaskReadDto>>.Success(data);
             }
             catch (Exception ex)
@@ -141,7 +149,7 @@ namespace SIFS.Application.DetectionTaskApp
                 if (!taskListResult.IsSuccess)
                     return Result<DetectionTaskDetailDto>.Fail(taskListResult.Code, taskListResult.Message);
 
-                if (taskListResult.Data.UserId != userId)
+                if (taskListResult.Data.UserId != userId && !await CanViewAllTasksAsync(userId))
                     return Result<DetectionTaskDetailDto>.Fail(ResultCode.Forbidden, "无权访问该任务");
 
                 var task = taskListResult.Data;
@@ -172,6 +180,12 @@ namespace SIFS.Application.DetectionTaskApp
             {
                 return Result<DetectionTaskDetailDto>.Fail(ResultCode.BusinessError, ex.Message);
             }
+        }
+
+        private async Task<bool> CanViewAllTasksAsync(Guid userId)
+        {
+            var result = await _permissionService.HasPermissionAsync(userId, "task:view:all");
+            return result.IsSuccess && result.Data;
         }
     }
 }

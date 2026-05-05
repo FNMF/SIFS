@@ -4,6 +4,7 @@ using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Extensions;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Results;
+using SIFS.Application.Rbac;
 
 namespace SIFS.Application.AlgoTaskApp
 {
@@ -14,6 +15,7 @@ namespace SIFS.Application.AlgoTaskApp
         private readonly IResultFileRepository _resultFileRepository;
         private readonly IAiService _aiService;
         private readonly IFileUrlBuilder _urlBuilder;
+        private readonly IPermissionService _permissionService;
         private readonly ILogger<AlgoTaskAppService> _logger;
 
         public AlgoTaskAppService(
@@ -22,6 +24,7 @@ namespace SIFS.Application.AlgoTaskApp
             IResultFileRepository resultFileRepository,
             IAiService aiService,
             IFileUrlBuilder urlBuilder,
+            IPermissionService permissionService,
             ILogger<AlgoTaskAppService> logger)
         {
             _algoTaskRepo = algoTaskRepo;
@@ -29,6 +32,7 @@ namespace SIFS.Application.AlgoTaskApp
             _resultFileRepository = resultFileRepository;
             _aiService = aiService;
             _urlBuilder = urlBuilder;
+            _permissionService = permissionService;
             _logger = logger;
         }
 
@@ -109,7 +113,8 @@ namespace SIFS.Application.AlgoTaskApp
         {
             try
             {
-                var dto = await _algoTaskRepo.GetDetailDtoByIdAsync(algoTaskId, userId);
+                var canViewAll = await CanViewAllTasksAsync(userId);
+                var dto = await _algoTaskRepo.GetDetailDtoByIdAsync(algoTaskId, userId, canViewAll);
 
                 if (dto == null)
                 {
@@ -128,6 +133,12 @@ namespace SIFS.Application.AlgoTaskApp
                     ex.Message
                 );
             }
+        }
+
+        private async Task<bool> CanViewAllTasksAsync(Guid userId)
+        {
+            var result = await _permissionService.HasPermissionAsync(userId, "task:view:all");
+            return result.IsSuccess && result.Data;
         }
     }
 }
