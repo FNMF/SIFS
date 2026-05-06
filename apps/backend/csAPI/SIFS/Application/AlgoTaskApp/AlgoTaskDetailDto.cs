@@ -20,6 +20,10 @@
 
         public decimal? Confidence { get; set; }
 
+        public string? FailureReason { get; set; }
+
+        public string? AlgoApiUrl { get; set; }
+
         public Dictionary<string, object>? ExtraParams { get; set; }
     }
 }

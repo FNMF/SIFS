@@ -26,4 +26,18 @@ public partial class AlgoTask
 
     [Column("status")]
     public int Status { get; set; }
+
+    [Column("algo_model_id")]
+    public int? AlgoModelId { get; set; }
+
+    [Column("algo_name")]
+    [StringLength(100)]
+    public string? AlgoName { get; set; }
+
+    [Column("algo_api_url")]
+    [StringLength(512)]
+    public string? AlgoApiUrl { get; set; }
+
+    [Column("failure_reason", TypeName = "text")]
+    public string? FailureReason { get; set; }
 }

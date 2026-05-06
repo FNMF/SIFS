@@ -32,6 +32,7 @@ namespace SIFS
             builder.Services.AddSingleton<AppEventLoggingListener>();
             builder.Services.AddSingleton<OperationLogListener>();
             builder.Services.AddHttpClient();
+            builder.Services.AddScoped<IAlgorithmEndpointResolver, AlgorithmEndpointResolver>();
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
             //jwt»œ÷§≈‰÷√

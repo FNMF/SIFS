@@ -12,6 +12,10 @@ namespace SIFS.Domain.Entities
         public Guid TaskId { get; private set; }
         public string Url { get; private set; }
         public AiServiceType Type { get; private set; }
+        public int? AlgoModelId { get; private set; }
+        public string? AlgoName { get; private set; }
+        public string? AlgoApiUrl { get; private set; }
+        public string? FailureReason { get; private set; }
         public int? Level { get; private set; }
         public AlgoTaskStatus Status { get; private set; } = AlgoTaskStatus.pending;
         public string Description { get; private set; } = null!;
@@ -24,9 +28,16 @@ namespace SIFS.Domain.Entities
             TaskId = taskId;
             Url = url;
             Type = type;
+            AlgoName = type.ToString();
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
             Level = level;
+        }
+        public void SetAlgorithmEndpoint(int? algoModelId, string algoName, string algoApiUrl)
+        {
+            AlgoModelId = algoModelId;
+            AlgoName = algoName;
+            AlgoApiUrl = algoApiUrl;
         }
         public AlgoTask ToEntity()
         {
@@ -37,6 +48,10 @@ namespace SIFS.Domain.Entities
                 CreatedAt = CreatedAt,
                 UpdatedAt = UpdatedAt,
                 Status = (int)Status,
+                AlgoModelId = AlgoModelId,
+                AlgoName = AlgoName,
+                AlgoApiUrl = AlgoApiUrl,
+                FailureReason = FailureReason
             };
         }
         public void MarkAsRunning()
@@ -56,9 +71,10 @@ namespace SIFS.Domain.Entities
                 UpdatedAt = DateTime.UtcNow;
             }
         }
-        public void MarkAsFailed()
+        public void MarkAsFailed(string? failureReason = null)
         {
             Status = AlgoTaskStatus.failed;
+            FailureReason = failureReason;
             UpdatedAt = DateTime.UtcNow;
         }
     }

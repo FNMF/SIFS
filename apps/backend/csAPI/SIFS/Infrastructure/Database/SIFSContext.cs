@@ -61,6 +61,7 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.TaskId).IsFixedLength();
+            entity.HasIndex(e => e.AlgoModelId, "ix_algo_task_algo_model_id");
         });
 
         modelBuilder.Entity<AlgoType>(entity =>

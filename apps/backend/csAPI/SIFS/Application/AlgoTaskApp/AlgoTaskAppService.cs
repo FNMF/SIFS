@@ -58,7 +58,7 @@ namespace SIFS.Application.AlgoTaskApp
                 var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
                 // 调用 AI
                 var result = await _aiService
-                    .DetectAsync(task.Type, accessibleUrl, task.Level);
+                    .DetectAsync(task.Type, accessibleUrl, task.Level, task.AlgoApiUrl);
                 _logger.LogInformation("算法任务 {AlgoTaskId} 执行完成，结果: {IsFake},{Confidence},{Url}", algoTaskId, result.IsFake,result.Confidence,result.MaskUrl);
 
                 // 保存结果文件记录
@@ -102,7 +102,7 @@ namespace SIFS.Application.AlgoTaskApp
             catch (Exception ex)
             {
                 // 失败处理
-                task.MarkAsFailed();
+                task.MarkAsFailed(ToSafeFailureReason(ex));
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
 
                 // TODO: 日志 / 重试
@@ -139,6 +139,21 @@ namespace SIFS.Application.AlgoTaskApp
         {
             var result = await _permissionService.HasPermissionAsync(userId, "task:view:all");
             return result.IsSuccess && result.Data;
+        }
+
+        private static string ToSafeFailureReason(Exception ex)
+        {
+            return ex switch
+            {
+                TaskCanceledException => "algorithm request timeout",
+                HttpRequestException => string.IsNullOrWhiteSpace(ex.Message)
+                    ? "algorithm request failed"
+                    : ex.Message,
+                InvalidOperationException => string.IsNullOrWhiteSpace(ex.Message)
+                    ? "algorithm invocation failed"
+                    : ex.Message,
+                _ => "algorithm invocation failed"
+            };
         }
     }
 }

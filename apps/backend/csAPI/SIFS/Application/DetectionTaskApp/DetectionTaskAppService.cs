@@ -25,6 +25,7 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly IPermissionService _permissionService;
         private readonly IEventBus _eventBus;
         private readonly IAppEventRequestContextFactory _requestContextFactory;
+        private readonly IAlgorithmEndpointResolver _algorithmEndpointResolver;
         private readonly ILogger<DetectionTaskAppService> _logger;
 
         public DetectionTaskAppService(
@@ -37,6 +38,7 @@ namespace SIFS.Application.DetectionTaskApp
             IPermissionService permissionService,
             IEventBus eventBus,
             IAppEventRequestContextFactory requestContextFactory,
+            IAlgorithmEndpointResolver algorithmEndpointResolver,
             ILogger<DetectionTaskAppService> logger)
         {
             _localfileService = localfileService;
@@ -48,6 +50,7 @@ namespace SIFS.Application.DetectionTaskApp
             _permissionService = permissionService;
             _eventBus = eventBus;
             _requestContextFactory = requestContextFactory;
+            _algorithmEndpointResolver = algorithmEndpointResolver;
             _logger = logger;
         }
 
@@ -60,6 +63,16 @@ namespace SIFS.Application.DetectionTaskApp
                     throw new Exception("请至少上传一张图片");
                 if (dto.Types == null || !dto.Types.Any())
                     throw new Exception("请至少选择一个检测类型");
+
+                var algorithmEndpoints = new Dictionary<AiServiceType, AlgorithmEndpointResolution>();
+                foreach (var type in dto.Types.Distinct())
+                {
+                    var resolveResult = await _algorithmEndpointResolver.ResolveAsync(type);
+                    if (!resolveResult.IsSuccess)
+                        return Result<Guid>.Fail(resolveResult.Code, resolveResult.Message);
+
+                    algorithmEndpoints[type] = resolveResult.Data;
+                }
 
                 // 排序校验（防重复）
                 if (dto.Images.Select(x => x.Order).Distinct().Count() != dto.Images.Count)
@@ -93,6 +106,8 @@ namespace SIFS.Application.DetectionTaskApp
                     {
                         // 创建 AlgoTask
                         var taskItem = new TaskItem(detectionTask.Id, file.Url, type, dto.Level);
+                        var endpoint = algorithmEndpoints[type];
+                        taskItem.SetAlgorithmEndpoint(endpoint.AlgoModelId, endpoint.AlgoName, endpoint.ApiUrl);
                         var algoTask = taskItem.ToEntity();
 
                         await _algoTaskRepo.InsertAsync(algoTask);

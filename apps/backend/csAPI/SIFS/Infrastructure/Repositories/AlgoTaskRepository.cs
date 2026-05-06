@@ -137,7 +137,7 @@ namespace SIFS.Infrastructure.Repositories
                 typeMapDict.TryGetValue(x.Id, out var typeId);
 
                 string typeName = string.Empty;
-                if (typeId != 0 && typeDict.TryGetValue(typeId, out var name))
+                if (typeDict.TryGetValue(typeId, out var name))
                 {
                     typeName = name;
                 }
@@ -151,6 +151,7 @@ namespace SIFS.Infrastructure.Repositories
                     Type = typeName,
                     Status = x.Status,
                     Level = taskList.Level,
+                    FailureReason = x.FailureReason,
                     UpdatedAt = x.UpdatedAt
                 };
             }).ToList();
@@ -209,6 +210,8 @@ namespace SIFS.Infrastructure.Repositories
                 Status = algoTask.Status,
                 StatusText = algoTask.Status.ToString(),
                 Level = taskList.Level,
+                FailureReason = algoTask.FailureReason,
+                AlgoApiUrl = algoTask.AlgoApiUrl,
                 IsFake = resultFile?.IsFake,
                 Confidence = resultFile?.Confidence == null
                     ? null
@@ -254,6 +257,10 @@ namespace SIFS.Infrastructure.Repositories
             typeof(TaskItem).GetProperty("Id")!.SetValue(task, entity.Id);
             typeof(TaskItem).GetProperty("CreatedAt")!.SetValue(task, entity.CreatedAt);
             typeof(TaskItem).GetProperty("UpdatedAt")!.SetValue(task, entity.UpdatedAt);
+            typeof(TaskItem).GetProperty("AlgoModelId")!.SetValue(task, entity.AlgoModelId);
+            typeof(TaskItem).GetProperty("AlgoName")!.SetValue(task, entity.AlgoName ?? algoType.Name);
+            typeof(TaskItem).GetProperty("AlgoApiUrl")!.SetValue(task, entity.AlgoApiUrl);
+            typeof(TaskItem).GetProperty("FailureReason")!.SetValue(task, entity.FailureReason);
 
             // 状态机映射
             switch ((AlgoTaskStatus)entity.Status)

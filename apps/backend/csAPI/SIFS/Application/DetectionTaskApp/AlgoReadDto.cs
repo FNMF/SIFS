@@ -9,6 +9,7 @@ namespace SIFS.Application.DetectionTaskApp
         public string Type { get; set; } = string.Empty;
         public int Status { get; set; }
         public int? Level { get; set; }
+        public string? FailureReason { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
 }
