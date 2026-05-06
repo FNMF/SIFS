@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using SIFS.Infrastructure;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
@@ -29,6 +30,37 @@ namespace SIFS
             var jwtKey = builder.Configuration["Jwt:SecretKey"];
             // Add services to the container.
             builder.Services.AddControllers();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Satellite Image Forensics System API",
+                    Version = "v1",
+                    Description = "Backend APIs for satellite image forensics, RBAC, task management, algorithm management, and dashboard data."
+                });
+
+                var securityScheme = new OpenApiSecurityScheme
+                {
+                    Name = "Authorization",
+                    Description = "Enter JWT Bearer token, for example: Bearer {token}",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                };
+
+                options.AddSecurityDefinition("Bearer", securityScheme);
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    { securityScheme, Array.Empty<string>() }
+                });
+            });
             builder.Services.AddSignalR();
             builder.Services.AddSingleton<IEventBus, EventBus>();
             builder.Services.AddSingleton<AppEventLoggingListener>();
@@ -149,6 +181,13 @@ namespace SIFS
 
             app.UseHttpsRedirection();
 
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "SIFS API v1");
+                options.RoutePrefix = "swagger";
+            });
+
             app.UseCors("Frontend");
 
             app.UseAuthentication();
@@ -174,6 +213,7 @@ namespace SIFS
         }
     }
 }
+
 
 
 
