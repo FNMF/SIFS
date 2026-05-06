@@ -7,6 +7,7 @@ namespace SIFS.Shared.Extensions.EventBus
         public const string TaskViewed = "TASK_VIEWED";
         public const string TaskDeleted = "TASK_DELETED";
         public const string TaskRetried = "TASK_RETRIED";
+        public const string TaskStatusChanged = "TASK_STATUS_CHANGED";
         public const string AlgoCreated = "ALGO_CREATED";
         public const string AlgoUpdated = "ALGO_UPDATED";
         public const string AlgoEnabled = "ALGO_ENABLED";

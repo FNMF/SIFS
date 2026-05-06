@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using SIFS.Infrastructure;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
+using SIFS.Infrastructure.Realtime;
 using SIFS.Shared.Extensions;
 using SIFS.Shared.Extensions.EventBus;
 using SIFS.Shared.Helpers.JWT;
@@ -28,9 +29,11 @@ namespace SIFS
             var jwtKey = builder.Configuration["Jwt:SecretKey"];
             // Add services to the container.
             builder.Services.AddControllers();
+            builder.Services.AddSignalR();
             builder.Services.AddSingleton<IEventBus, EventBus>();
             builder.Services.AddSingleton<AppEventLoggingListener>();
             builder.Services.AddSingleton<OperationLogListener>();
+            builder.Services.AddSingleton<DashboardRealtimeListener>();
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<IAlgorithmEndpointResolver, AlgorithmEndpointResolver>();
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -58,6 +61,21 @@ namespace SIFS
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
             )
+        };
+
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/admin/dashboard/hub"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     })
     .AddJwtBearer("ExpiredAllowed", options =>
@@ -115,7 +133,8 @@ namespace SIFS
                     policy
                         .WithOrigins("http://localhost:5173")
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 
@@ -124,6 +143,7 @@ namespace SIFS
             var eventBus = app.Services.GetRequiredService<IEventBus>();
             app.Services.GetRequiredService<AppEventLoggingListener>().RegisterAll(eventBus);
             app.Services.GetRequiredService<OperationLogListener>().RegisterAll(eventBus);
+            app.Services.GetRequiredService<DashboardRealtimeListener>().Register(eventBus);
 
             // Configure the HTTP request pipeline.
 
@@ -148,9 +168,13 @@ namespace SIFS
             });
 
             app.MapControllers();
+            app.MapHub<DashboardHub>("/admin/dashboard/hub");
 
             app.Run();
         }
     }
 }
+
+
+
 

@@ -196,7 +196,7 @@ try
            orderedFlow.Data.Any(x => x.ToStatus == "deleted"),
         "status flow API returns ordered TaskAudit timeline");
 
-    var failingAuditService = new TaskAuditService(new FailingTaskAuditRepository(), NullLogger<TaskAuditService>.Instance);
+    var failingAuditService = new TaskAuditService(new FailingTaskAuditRepository(), eventBus, NullLogger<TaskAuditService>.Instance);
     await failingAuditService.RecordTransitionAsync(ownTaskId, "running", "failed", "ignored failure", null);
     Assert(true, "TaskAudit write failure does not break caller");
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Infrastructure.Repositories;
+using SIFS.Shared.Extensions.EventBus;
 using SIFS.Shared.Helpers;
 
 namespace SIFS.Application.TaskAudits
@@ -8,13 +9,16 @@ namespace SIFS.Application.TaskAudits
     public class TaskAuditService : ITaskAuditService
     {
         private readonly ITaskAuditRepository _taskAuditRepository;
+        private readonly IEventBus _eventBus;
         private readonly ILogger<TaskAuditService> _logger;
 
         public TaskAuditService(
             ITaskAuditRepository taskAuditRepository,
+            IEventBus eventBus,
             ILogger<TaskAuditService> logger)
         {
             _taskAuditRepository = taskAuditRepository;
+            _eventBus = eventBus;
             _logger = logger;
         }
 
@@ -41,6 +45,20 @@ namespace SIFS.Application.TaskAudits
                 };
 
                 await _taskAuditRepository.CreateAsync(audit);
+                _eventBus.Publish(new AppEvent
+                {
+                    EventType = AppEventTypes.TaskStatusChanged,
+                    ActorId = operatorId,
+                    TargetType = "detection_task",
+                    TargetId = taskId.ToString(),
+                    Payload = new Dictionary<string, object?>
+                    {
+                        ["from_status"] = fromStatus,
+                        ["to_status"] = toStatus,
+                        ["reason"] = reason,
+                        ["extra_json"] = audit.ExtraJson
+                    }
+                });
             }
             catch (Exception ex)
             {

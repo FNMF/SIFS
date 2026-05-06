@@ -32,12 +32,14 @@ using SIFS.Infrastructure.External;
 using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Extensions;
+using SIFS.Shared.Extensions.EventBus;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Results;
 
 var services = new ServiceCollection();
 services.AddLogging();
 services.AddHttpClient();
+services.AddSingleton<IEventBus, EventBus>();
 services.AddDbContext<SIFSContext>();
 services.Configure<AppUrlOptions>(options =>
 {
