@@ -10,6 +10,7 @@ using SIFS.Domain.Enum;
 using System.Diagnostics;
 using SIFS.Infrastructure.External;
 using SIFS.Application.Rbac;
+using SIFS.Application.TaskAudits;
 using SIFS.Shared.Extensions.EventBus;
 
 namespace SIFS.Application.DetectionTaskApp
@@ -26,6 +27,7 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly IEventBus _eventBus;
         private readonly IAppEventRequestContextFactory _requestContextFactory;
         private readonly IAlgorithmEndpointResolver _algorithmEndpointResolver;
+        private readonly ITaskAuditService _taskAuditService;
         private readonly ILogger<DetectionTaskAppService> _logger;
 
         public DetectionTaskAppService(
@@ -39,6 +41,7 @@ namespace SIFS.Application.DetectionTaskApp
             IEventBus eventBus,
             IAppEventRequestContextFactory requestContextFactory,
             IAlgorithmEndpointResolver algorithmEndpointResolver,
+            ITaskAuditService taskAuditService,
             ILogger<DetectionTaskAppService> logger)
         {
             _localfileService = localfileService;
@@ -51,6 +54,7 @@ namespace SIFS.Application.DetectionTaskApp
             _eventBus = eventBus;
             _requestContextFactory = requestContextFactory;
             _algorithmEndpointResolver = algorithmEndpointResolver;
+            _taskAuditService = taskAuditService;
             _logger = logger;
         }
 
@@ -98,6 +102,12 @@ namespace SIFS.Application.DetectionTaskApp
                 var detectionTask = new DetectionTask(userId, urls, dto.Types, dto.Level);
 
                 await _taskListRepo.InsertAsync(detectionTask.ToEntity());
+                await _taskAuditService.RecordTransitionAsync(
+                    detectionTask.Id,
+                    null,
+                    "created",
+                    "task created",
+                    userId);
 
                 // 生成并持久化子任务
                 foreach (var file in fileResults)
@@ -137,6 +147,13 @@ namespace SIFS.Application.DetectionTaskApp
 
                         // 入队
                         await _queue.EnqueueAsync(algoTask.Id);
+                        await _taskAuditService.RecordTransitionAsync(
+                            detectionTask.Id,
+                            "created",
+                            "queued",
+                            "task queued",
+                            userId,
+                            new { algo_task_id = algoTask.Id, algorithm = endpoint.AlgoName });
                     }
                 }
                 // 返回任务ID

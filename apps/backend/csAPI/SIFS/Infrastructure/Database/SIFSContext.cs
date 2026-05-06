@@ -41,6 +41,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<TaskList> TaskLists { get; set; }
 
+    public virtual DbSet<TaskAudit> TaskAudits { get; set; }
+
     public virtual DbSet<TaskTypeMap> TaskTypeMaps { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
@@ -181,6 +183,31 @@ public partial class SIFSContext : DbContext
             entity.HasIndex(e => e.UserId, "ix_task_list_user_id");
             entity.HasIndex(e => e.CreatedAt, "ix_task_list_created_at");
             entity.HasIndex(e => e.DeletedAt, "ix_task_list_deleted_at");
+        });
+
+        modelBuilder.Entity<TaskAudit>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.TaskId, "ix_task_audits_task_id");
+            entity.HasIndex(e => e.OperatorId, "ix_task_audits_operator_id");
+            entity.HasIndex(e => e.CreatedAt, "ix_task_audits_created_at");
+            entity.HasIndex(e => e.ToStatus, "ix_task_audits_to_status");
+
+            entity.Property(e => e.Id).IsFixedLength();
+            entity.Property(e => e.TaskId).IsFixedLength();
+            entity.Property(e => e.OperatorId).IsFixedLength();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne<TaskList>()
+                .WithMany()
+                .HasForeignKey(e => e.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(e => e.OperatorId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<TaskTypeMap>(entity =>

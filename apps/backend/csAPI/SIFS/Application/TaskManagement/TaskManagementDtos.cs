@@ -1,5 +1,7 @@
 namespace SIFS.Application.TaskManagement
 {
+    using SIFS.Application.TaskAudits;
+
     public class TaskManagementListItemDto
     {
         public Guid TaskId { get; set; }
@@ -37,6 +39,7 @@ namespace SIFS.Application.TaskManagement
         public DateTime? FinishedAt { get; set; }
         public double? Duration { get; set; }
         public string? FailureReason { get; set; }
+        public List<TaskAuditDto> StatusTimeline { get; set; } = new();
         public List<TaskManagementSubTaskDto> SubTasks { get; set; } = new();
     }
 
@@ -60,9 +63,13 @@ namespace SIFS.Application.TaskManagement
 
     public class TaskStatusFlowItemDto
     {
+        public string? FromStatus { get; set; }
+        public string ToStatus { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public string? Reason { get; set; }
+        public Guid? OperatorId { get; set; }
+        public string? ExtraJson { get; set; }
     }
 
     public class TaskOperationResultDto

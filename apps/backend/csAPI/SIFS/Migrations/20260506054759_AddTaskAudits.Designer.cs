@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SIFS.Infrastructure.Database;
 
@@ -11,9 +12,11 @@ using SIFS.Infrastructure.Database;
 namespace SIFS.Migrations
 {
     [DbContext(typeof(SIFSContext))]
-    partial class SIFSContextModelSnapshot : ModelSnapshot
+    [Migration("20260506054759_AddTaskAudits")]
+    partial class AddTaskAudits
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -705,20 +708,6 @@ namespace SIFS.Migrations
                         .IsUnique();
 
                     b.ToTable("user_roles");
-                });
-
-            modelBuilder.Entity("SIFS.Infrastructure.Persistence.Models.TaskAudit", b =>
-                {
-                    b.HasOne("SIFS.Infrastructure.Persistence.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("SIFS.Infrastructure.Persistence.Models.TaskList", null)
-                        .WithMany()
-                        .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -25,6 +25,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SIFS.Application.AlgoTaskApp;
 using SIFS.Application.Rbac;
+using SIFS.Application.TaskAudits;
 using SIFS.Domain.Enum;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
@@ -45,6 +46,8 @@ services.Configure<AppUrlOptions>(options =>
 });
 services.AddSingleton<IFileUrlBuilder, FileUrlBuilder>();
 services.AddScoped<IAlgoModelRepository, AlgoModelRepository>();
+services.AddScoped<ITaskAuditRepository, TaskAuditRepository>();
+services.AddScoped<ITaskAuditService, TaskAuditService>();
 services.AddScoped<IAlgorithmEndpointResolver, AlgorithmEndpointResolver>();
 services.AddScoped<IAiService, AiService>();
 services.AddScoped<IAlgoTaskRepository, AlgoTaskRepository>();
@@ -197,6 +200,8 @@ try
     var failedTask = await db.AlgoTasks.AsNoTracking().FirstAsync(x => x.Id == algoTaskId);
     Assert(failedTask.Status == (int)AlgoTaskStatus.failed, "algorithm call failure marks task failed");
     Assert(!string.IsNullOrWhiteSpace(failedTask.FailureReason), "algorithm call failure stores task failure reason");
+    Assert(await db.TaskAudits.AnyAsync(x => x.TaskId == taskListId && x.ToStatus == "failed" && x.Reason == failedTask.FailureReason),
+        "worker failure writes TaskAudit record with reason");
 
     var detailRepo = scope.ServiceProvider.GetRequiredService<IAlgoTaskRepository>();
     var detail = await detailRepo.GetDetailDtoByIdAsync(algoTaskId, Guid.Empty, true);
@@ -206,6 +211,7 @@ finally
 {
     var resultFiles = await db.ResultFiles.Where(x => taskIds.Contains(x.AlgoTaskId)).ToListAsync();
     db.ResultFiles.RemoveRange(resultFiles);
+    db.TaskAudits.RemoveRange(await db.TaskAudits.Where(x => taskListIds.Contains(x.TaskId)).ToListAsync());
     db.TaskTypeMaps.RemoveRange(await db.TaskTypeMaps.Where(x => typeMapIds.Contains(x.Id)).ToListAsync());
     db.Localfiles.RemoveRange(await db.Localfiles.Where(x => localFileIds.Contains(x.Id)).ToListAsync());
     db.AlgoTasks.RemoveRange(await db.AlgoTasks.Where(x => taskIds.Contains(x.Id)).ToListAsync());

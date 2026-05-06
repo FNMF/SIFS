@@ -5,6 +5,7 @@ using SIFS.Shared.Extensions;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Results;
 using SIFS.Application.Rbac;
+using SIFS.Application.TaskAudits;
 
 namespace SIFS.Application.AlgoTaskApp
 {
@@ -16,6 +17,7 @@ namespace SIFS.Application.AlgoTaskApp
         private readonly IAiService _aiService;
         private readonly IFileUrlBuilder _urlBuilder;
         private readonly IPermissionService _permissionService;
+        private readonly ITaskAuditService _taskAuditService;
         private readonly ILogger<AlgoTaskAppService> _logger;
 
         public AlgoTaskAppService(
@@ -25,6 +27,7 @@ namespace SIFS.Application.AlgoTaskApp
             IAiService aiService,
             IFileUrlBuilder urlBuilder,
             IPermissionService permissionService,
+            ITaskAuditService taskAuditService,
             ILogger<AlgoTaskAppService> logger)
         {
             _algoTaskRepo = algoTaskRepo;
@@ -33,6 +36,7 @@ namespace SIFS.Application.AlgoTaskApp
             _aiService = aiService;
             _urlBuilder = urlBuilder;
             _permissionService = permissionService;
+            _taskAuditService = taskAuditService;
             _logger = logger;
         }
 
@@ -56,8 +60,16 @@ namespace SIFS.Application.AlgoTaskApp
             {
                 _logger.LogInformation("开始执行算法任务 {AlgoTaskId}", algoTaskId);
                 // 标记运行中
+                var fromStatus = task.Status.ToString();
                 task.MarkAsRunning();
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
+                await _taskAuditService.RecordTransitionAsync(
+                    task.TaskId,
+                    fromStatus,
+                    "processing",
+                    "worker started task",
+                    null,
+                    new { algo_task_id = task.Id, algorithm = task.AlgoName });
 
                 // URL 转换（本地路径 -> 可访问 URL）
                 var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
@@ -81,8 +93,16 @@ namespace SIFS.Application.AlgoTaskApp
                 _logger.LogInformation("保存算法任务 {AlgoTaskId} 的结果文件记录，MaskLocalUrl: {MaskLocalUrl}", algoTaskId, result.MaskUrl);
 
                 // 标记完成
+                fromStatus = task.Status.ToString();
                 task.MarkAsDone(result);
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
+                await _taskAuditService.RecordTransitionAsync(
+                    task.TaskId,
+                    fromStatus,
+                    "success",
+                    "worker completed task",
+                    null,
+                    new { algo_task_id = task.Id, algorithm = task.AlgoName });
 
                 // 更新父任务
                 var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
@@ -107,8 +127,16 @@ namespace SIFS.Application.AlgoTaskApp
             catch (Exception ex)
             {
                 // 失败处理
+                var fromStatus = task.Status.ToString();
                 task.MarkAsFailed(ToSafeFailureReason(ex));
                 await _algoTaskRepo.UpdateAsync(task.ToEntity());
+                await _taskAuditService.RecordTransitionAsync(
+                    task.TaskId,
+                    fromStatus,
+                    "failed",
+                    task.FailureReason,
+                    null,
+                    new { algo_task_id = task.Id, algorithm = task.AlgoName });
 
                 // TODO: 日志 / 重试
                 _logger.LogError(ex, "执行算法任务 {AlgoTaskId} 失败", algoTaskId);

@@ -1,3 +1,4 @@
+using SIFS.Application.TaskAudits;
 using SIFS.Domain.Enum;
 using SIFS.Infrastructure;
 using SIFS.Infrastructure.External;
@@ -14,19 +15,22 @@ namespace SIFS.Application.TaskManagement
         private readonly IEventBus _eventBus;
         private readonly IAppEventRequestContextFactory _requestContextFactory;
         private readonly IAlgoTaskQueue _queue;
+        private readonly ITaskAuditService _taskAuditService;
 
         public TaskManagementService(
             ITaskManagementRepository taskManagementRepository,
             IAlgorithmEndpointResolver algorithmEndpointResolver,
             IEventBus eventBus,
             IAppEventRequestContextFactory requestContextFactory,
-            IAlgoTaskQueue queue)
+            IAlgoTaskQueue queue,
+            ITaskAuditService taskAuditService)
         {
             _taskManagementRepository = taskManagementRepository;
             _algorithmEndpointResolver = algorithmEndpointResolver;
             _eventBus = eventBus;
             _requestContextFactory = requestContextFactory;
             _queue = queue;
+            _taskAuditService = taskAuditService;
         }
 
         public async Task<Result<Paged<TaskManagementListItemDto>>> QueryAdminAsync(TaskManagementQuery query, Guid actorId)
@@ -45,8 +49,9 @@ namespace SIFS.Application.TaskManagement
         {
             var detail = await _taskManagementRepository.GetDetailAsync(taskId);
             if (detail == null)
-                return Result<TaskManagementDetailDto>.Fail(ResultCode.NotFound, "任务不存在");
+                return Result<TaskManagementDetailDto>.Fail(ResultCode.NotFound, "Task not found");
 
+            detail.StatusTimeline = await _taskAuditService.ListByTaskIdAsync(taskId);
             PublishTaskViewed(taskId, actorId, "admin view task");
             return Result<TaskManagementDetailDto>.Success(detail);
         }
@@ -55,17 +60,31 @@ namespace SIFS.Application.TaskManagement
         {
             var detail = await _taskManagementRepository.GetDetailAsync(taskId, userId);
             if (detail == null)
-                return Result<TaskManagementDetailDto>.Fail(ResultCode.Forbidden, "无权访问该任务");
+                return Result<TaskManagementDetailDto>.Fail(ResultCode.Forbidden, "No permission to access this task");
 
+            detail.StatusTimeline = await _taskAuditService.ListByTaskIdAsync(taskId);
             PublishTaskViewed(taskId, userId, "view own task");
             return Result<TaskManagementDetailDto>.Success(detail);
         }
 
         public async Task<Result<List<TaskStatusFlowItemDto>>> GetAdminStatusFlowAsync(Guid taskId, Guid actorId)
         {
-            var flow = await _taskManagementRepository.GetStatusFlowAsync(taskId);
-            if (flow == null)
-                return Result<List<TaskStatusFlowItemDto>>.Fail(ResultCode.NotFound, "任务不存在");
+            var detail = await _taskManagementRepository.GetDetailAsync(taskId, includeDeleted: true);
+            if (detail == null)
+                return Result<List<TaskStatusFlowItemDto>>.Fail(ResultCode.NotFound, "Task not found");
+
+            var flow = (await _taskAuditService.ListByTaskIdAsync(taskId))
+                .Select(x => new TaskStatusFlowItemDto
+                {
+                    FromStatus = x.FromStatus,
+                    ToStatus = x.ToStatus,
+                    Status = x.ToStatus,
+                    Reason = x.Reason,
+                    OperatorId = x.OperatorId,
+                    CreatedAt = x.CreatedAt,
+                    ExtraJson = x.ExtraJson
+                })
+                .ToList();
 
             PublishTaskViewed(taskId, actorId, "view task status flow");
             return Result<List<TaskStatusFlowItemDto>>.Success(flow);
@@ -75,17 +94,19 @@ namespace SIFS.Application.TaskManagement
         {
             var detail = await _taskManagementRepository.GetDetailAsync(taskId);
             if (detail == null)
-                return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "任务不存在");
+                return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "Task not found");
             if (detail.CurrentStatus is "done" or "deleted" or "canceled")
-                return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "当前任务状态不允许取消");
+                return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "Task status does not allow cancel");
 
+            var fromStatus = detail.CurrentStatus;
             await _taskManagementRepository.CancelAsync(taskId, "canceled by admin");
+            await _taskAuditService.RecordTransitionAsync(taskId, fromStatus, "canceled", "admin canceled task", actorId);
             PublishTaskDeleted(taskId, actorId, "cancel task", "cancel");
 
             return Result<TaskOperationResultDto>.Success(new TaskOperationResultDto
             {
                 TaskId = taskId,
-                Message = "任务已取消"
+                Message = "Task canceled"
             });
         }
 
@@ -93,7 +114,7 @@ namespace SIFS.Application.TaskManagement
         {
             var detail = await _taskManagementRepository.GetDetailAsync(taskId);
             if (detail == null)
-                return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "任务不存在");
+                return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "Task not found");
 
             var typeIds = detail.SubTasks
                 .Select(x => x.AlgorithmTypeId)
@@ -103,7 +124,7 @@ namespace SIFS.Application.TaskManagement
                 .ToList();
 
             if (!typeIds.Any())
-                return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "任务缺少算法信息，无法重试");
+                return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "Task has no algorithm info for retry");
 
             var endpoints = new Dictionary<int, AlgorithmEndpointResolution>();
             foreach (var typeId in typeIds)
@@ -119,9 +140,13 @@ namespace SIFS.Application.TaskManagement
             }
 
             var retryResult = await _taskManagementRepository.RetryAsync(taskId, endpoints);
+            await _taskAuditService.RecordTransitionAsync(taskId, detail.CurrentStatus, "retried", "admin retried task", actorId, new { new_task_id = retryResult.NewTaskId });
+            await _taskAuditService.RecordTransitionAsync(retryResult.NewTaskId, null, "created", "created from retry", actorId, new { source_task_id = taskId });
+
             foreach (var algoTaskId in retryResult.AlgoTaskIds)
             {
                 await _queue.EnqueueAsync(algoTaskId);
+                await _taskAuditService.RecordTransitionAsync(retryResult.NewTaskId, "created", "queued", "task queued", actorId, new { algo_task_id = algoTaskId });
             }
 
             _eventBus.Publish(new AppEvent
@@ -142,7 +167,7 @@ namespace SIFS.Application.TaskManagement
             {
                 TaskId = taskId,
                 NewTaskId = retryResult.NewTaskId,
-                Message = "任务已重新提交"
+                Message = "Task retried"
             });
         }
 
@@ -150,17 +175,19 @@ namespace SIFS.Application.TaskManagement
         {
             var detail = await _taskManagementRepository.GetDetailAsync(taskId);
             if (detail == null)
-                return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "任务不存在");
+                return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "Task not found");
             if (detail.CurrentStatus == "deleted")
-                return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "任务已删除");
+                return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "Task already deleted");
 
+            var fromStatus = detail.CurrentStatus;
             await _taskManagementRepository.SoftDeleteAsync(taskId, "deleted by admin");
+            await _taskAuditService.RecordTransitionAsync(taskId, fromStatus, "deleted", "admin deleted task", actorId);
             PublishTaskDeleted(taskId, actorId, "delete task", "delete");
 
             return Result<TaskOperationResultDto>.Success(new TaskOperationResultDto
             {
                 TaskId = taskId,
-                Message = "任务已删除"
+                Message = "Task deleted"
             });
         }
 

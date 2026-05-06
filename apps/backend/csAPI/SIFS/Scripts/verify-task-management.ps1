@@ -23,7 +23,9 @@ try {
     $program = @'
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using SIFS.Application.OperationLogs;
+using SIFS.Application.TaskAudits;
 using SIFS.Application.TaskManagement;
 using SIFS.Domain.Enum;
 using SIFS.Infrastructure;
@@ -53,6 +55,8 @@ services.AddSingleton<IEventBus, EventBus>();
 services.AddSingleton<OperationLogListener>();
 services.AddScoped<IOperationLogRepository, OperationLogRepository>();
 services.AddScoped<IOperationLogService, OperationLogService>();
+services.AddScoped<ITaskAuditRepository, TaskAuditRepository>();
+services.AddScoped<ITaskAuditService, TaskAuditService>();
 services.AddScoped<IAlgoModelRepository, AlgoModelRepository>();
 services.AddScoped<IAlgorithmEndpointResolver, AlgorithmEndpointResolver>();
 services.AddSingleton<IAlgoTaskQueue, AlgoTaskQueue>();
@@ -114,6 +118,9 @@ try
     var ownTaskId = await CreateTaskAsync(userId, "own", AlgoTaskStatus.failed, "verify failure");
     var otherTaskId = await CreateTaskAsync(otherUserId, "other", AlgoTaskStatus.pending, null);
 
+    Assert(await db.TaskAudits.AnyAsync(x => x.TaskId == ownTaskId && x.FromStatus == null && x.ToStatus == "created"),
+        "task creation writes TaskAudit record");
+
     var adminList = await service.QueryAdminAsync(new TaskManagementQuery { Keyword = "verify-", Page = 1, PageSize = 20 }, adminId);
     Assert(adminList.IsSuccess && adminList.Data.Data.Any(x => x.TaskId == ownTaskId) && adminList.Data.Data.Any(x => x.TaskId == otherTaskId),
         "admin can list all users' tasks");
@@ -144,6 +151,14 @@ try
     taskIds.Add(retry.Data.NewTaskId!.Value);
     operationTargetIds.Add(ownTaskId.ToString());
 
+    var retryAudits = await db.TaskAudits.AsNoTracking().Where(x => x.TaskId == ownTaskId).OrderBy(x => x.CreatedAt).ToListAsync();
+    Assert(retryAudits.Any(x => x.ToStatus == "retried" && x.OperatorId == adminId),
+        "admin retry writes TaskAudit record");
+
+    var newTaskAudits = await db.TaskAudits.AsNoTracking().Where(x => x.TaskId == retry.Data.NewTaskId.Value).OrderBy(x => x.CreatedAt).ToListAsync();
+    Assert(newTaskAudits.Any(x => x.FromStatus == null && x.ToStatus == "created") && newTaskAudits.Any(x => x.ToStatus == "queued"),
+        "retry-created task writes created and queued TaskAudit records");
+
     var cancel = await service.CancelAdminAsync(otherTaskId, adminId);
     Assert(cancel.IsSuccess,
         "admin can cancel pending task");
@@ -151,11 +166,17 @@ try
     var canceledDetail = await service.GetAdminDetailAsync(otherTaskId, adminId);
     Assert(canceledDetail.IsSuccess && canceledDetail.Data.CurrentStatus == "canceled",
         "cancel updates task status");
+    Assert(canceledDetail.Data.StatusTimeline.Any(x => x.ToStatus == "canceled"),
+        "task detail includes ordered status timeline");
 
     var delete = await service.DeleteAdminAsync(otherTaskId, adminId);
     Assert(delete.IsSuccess,
         "admin can soft delete task");
     operationTargetIds.Add(otherTaskId.ToString());
+
+    var deleteAudits = await db.TaskAudits.AsNoTracking().Where(x => x.TaskId == otherTaskId).OrderBy(x => x.CreatedAt).ToListAsync();
+    Assert(deleteAudits.Any(x => x.ToStatus == "deleted" && x.OperatorId == adminId),
+        "admin delete writes TaskAudit record");
 
     var deletedList = await service.QueryAdminAsync(new TaskManagementQuery { UserId = otherUserId }, adminId);
     Assert(deletedList.IsSuccess && deletedList.Data.Data.All(x => x.TaskId != otherTaskId),
@@ -168,6 +189,16 @@ try
          x.OperationType == AppEventTypes.TaskDeleted));
     Assert(logCount >= 3,
         "task operations write OperationLog through EventBus");
+
+    var orderedFlow = await service.GetAdminStatusFlowAsync(otherTaskId, adminId);
+    Assert(orderedFlow.IsSuccess &&
+           orderedFlow.Data.SequenceEqual(orderedFlow.Data.OrderBy(x => x.CreatedAt)) &&
+           orderedFlow.Data.Any(x => x.ToStatus == "deleted"),
+        "status flow API returns ordered TaskAudit timeline");
+
+    var failingAuditService = new TaskAuditService(new FailingTaskAuditRepository(), NullLogger<TaskAuditService>.Instance);
+    await failingAuditService.RecordTransitionAsync(ownTaskId, "running", "failed", "ignored failure", null);
+    Assert(true, "TaskAudit write failure does not break caller");
 }
 finally
 {
@@ -177,6 +208,7 @@ finally
     db.TaskTypeMaps.RemoveRange(await db.TaskTypeMaps.Where(x => childIds.Contains(x.TaskId) || typeMapIds.Contains(x.Id)).ToListAsync());
     db.Localfiles.RemoveRange(await db.Localfiles.Where(x => childIds.Contains(x.AlgoTaskId) || localFileIds.Contains(x.Id)).ToListAsync());
     db.AlgoTasks.RemoveRange(await db.AlgoTasks.Where(x => childIds.Contains(x.Id) || algoTaskIds.Contains(x.Id)).ToListAsync());
+    db.TaskAudits.RemoveRange(await db.TaskAudits.Where(x => allTaskIds.Contains(x.TaskId)).ToListAsync());
     db.TaskLists.RemoveRange(await db.TaskLists.Where(x => allTaskIds.Contains(x.Id)).ToListAsync());
     db.OperationLogs.RemoveRange(await db.OperationLogs.Where(x => operationTargetIds.Contains(x.TargetId!)).ToListAsync());
     db.Users.RemoveRange(await db.Users.Where(x => x.Id == adminId || x.Id == userId || x.Id == otherUserId).ToListAsync());
@@ -247,6 +279,27 @@ async Task<Guid> CreateTaskAsync(Guid ownerId, string label, AlgoTaskStatus stat
         Confidence = 0.1,
         MaskLocalUrl = "/Files/result-" + label + ".png"
     });
+    db.TaskAudits.Add(new TaskAudit
+    {
+        Id = UuidV7.NewUuidV7(),
+        TaskId = taskId,
+        FromStatus = null,
+        ToStatus = "created",
+        Reason = "task created",
+        OperatorId = ownerId,
+        CreatedAt = now.AddMinutes(-10)
+    });
+    db.TaskAudits.Add(new TaskAudit
+    {
+        Id = UuidV7.NewUuidV7(),
+        TaskId = taskId,
+        FromStatus = "created",
+        ToStatus = "queued",
+        Reason = "task queued",
+        OperatorId = ownerId,
+        CreatedAt = now.AddMinutes(-9),
+        ExtraJson = "{\"algo_task_id\":\"" + algoTaskId + "\"}"
+    });
     await db.SaveChangesAsync();
     return taskId;
 }
@@ -257,6 +310,14 @@ static void Assert(bool condition, string message)
         throw new Exception("FAIL " + message);
 
     Console.WriteLine("PASS " + message);
+}
+
+public class FailingTaskAuditRepository : ITaskAuditRepository
+{
+    public Task CreateAsync(TaskAudit taskAudit) => throw new Exception("expected audit write failure");
+    public Task<List<TaskAuditDto>> ListByTaskIdAsync(Guid taskId) => Task.FromResult(new List<TaskAuditDto>());
+    public Task<Dictionary<Guid, List<TaskAuditDto>>> ListByTaskIdsAsync(IEnumerable<Guid> taskIds) =>
+        Task.FromResult(new Dictionary<Guid, List<TaskAuditDto>>());
 }
 '@
 
