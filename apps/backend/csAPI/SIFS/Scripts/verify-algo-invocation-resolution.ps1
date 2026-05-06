@@ -23,7 +23,6 @@ try {
     $program = @'
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using SIFS.Application.AlgoTaskApp;
 using SIFS.Application.Rbac;
 using SIFS.Domain.Enum;
@@ -39,10 +38,6 @@ var services = new ServiceCollection();
 services.AddLogging();
 services.AddHttpClient();
 services.AddDbContext<SIFSContext>();
-services.Configure<AiServiceOptions>(options =>
-{
-    options.Endpoints[AiServiceType.FLDCF] = "http://fallback.example/detect/fldcf";
-});
 services.Configure<AppUrlOptions>(options =>
 {
     options.BaseUrl = "http://localhost";
@@ -80,9 +75,9 @@ try
         await db.SaveChangesAsync();
     }
 
-    var fallback = await resolver.ResolveAsync(AiServiceType.FLDCF);
-    Assert(fallback.IsSuccess && fallback.Data.IsFallback && fallback.Data.ApiUrl == "http://fallback.example/detect/fldcf",
-        "existing FLDCF fallback works when no DB AlgoModel exists");
+    var missingFldcf = await resolver.ResolveAsync(AiServiceType.FLDCF);
+    Assert(!missingFldcf.IsSuccess && missingFldcf.Code == ResultCode.NotFound && missingFldcf.Message.Contains("ALGORITHM_NOT_FOUND"),
+        "FLDCF requires database AlgoModel when no DB record exists");
 
     var fldcf = originalFldcf ?? new AlgoModel
     {
@@ -100,8 +95,8 @@ try
     await db.SaveChangesAsync();
 
     var dbResolved = await resolver.ResolveAsync(AiServiceType.FLDCF);
-    Assert(dbResolved.IsSuccess && !dbResolved.Data.IsFallback && dbResolved.Data.ApiUrl == "http://db.example/detect/fldcf",
-        "enabled FLDCF AlgoModel uses DB api_url first");
+    Assert(dbResolved.IsSuccess && dbResolved.Data.ApiUrl == "http://db.example/detect/fldcf",
+        "enabled FLDCF AlgoModel uses DB api_url");
 
     var trackedFldcf = await db.AlgoModels.FirstAsync(x => x.Name == "FLDCF");
     trackedFldcf.ApiUrl = "http://db.example/detect/fldcf-updated";

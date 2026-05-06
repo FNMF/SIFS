@@ -81,9 +81,6 @@ namespace SIFS
 
             builder.Services.AddHttpContextAccessor();
 
-            builder.Services.Configure<AiServiceOptions>(
-                builder.Configuration.GetSection("AiServiceOptions"));
-
             //文件URL构建器配置
             builder.Services.Configure<AppUrlOptions>(
                 builder.Configuration.GetSection("AppUrlOptions"));
@@ -156,3 +153,4 @@ namespace SIFS
         }
     }
 }
+
