@@ -5,6 +5,8 @@
         pending = 0,
         running = 1,
         done = 2,
-        failed = 3
+        failed = 3,
+        canceled = 4,
+        deleted = 5
     }
 }

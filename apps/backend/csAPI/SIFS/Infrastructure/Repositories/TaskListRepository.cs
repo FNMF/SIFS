@@ -24,6 +24,7 @@ namespace SIFS.Infrastructure.Repositories
         {
             var taskList = await _context.TaskLists
                 .AsNoTracking()
+                .Where(t => t.DeletedAt == null)
                 .FirstOrDefaultAsync(t => t.Id == id);
             return taskList != null
                 ? Result<TaskList>.Success(taskList)
@@ -82,6 +83,7 @@ namespace SIFS.Infrastructure.Repositories
             var taskLists = await _context.TaskLists
                 .AsNoTracking()
                 .Where(x => x.UserId == userId)
+                .Where(x => x.DeletedAt == null)
                 .OrderByDescending(x => x.UpdatedAt)
                 .ToListAsync();
 
@@ -91,6 +93,7 @@ namespace SIFS.Infrastructure.Repositories
         {
             var taskLists = await _context.TaskLists
                 .AsNoTracking()
+                .Where(x => x.DeletedAt == null)
                 .OrderByDescending(x => x.UpdatedAt)
                 .ToListAsync();
 

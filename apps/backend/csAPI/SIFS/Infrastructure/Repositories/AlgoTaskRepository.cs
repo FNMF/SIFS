@@ -24,6 +24,7 @@ namespace SIFS.Infrastructure.Repositories
         {
             var algoTask = await _context.AlgoTasks
                 .AsNoTracking()
+                .Where(t => t.DeletedAt == null)
                 .FirstOrDefaultAsync(t => t.Id == id);
             return algoTask != null
                 ? Result<AlgoTask>.Success(algoTask)
@@ -34,6 +35,7 @@ namespace SIFS.Infrastructure.Repositories
             // 取 AlgoTask 基础实体
             var entity = await _context.AlgoTasks
                 .AsNoTracking()
+                .Where(t => t.DeletedAt == null)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (entity == null)
@@ -160,6 +162,7 @@ namespace SIFS.Infrastructure.Repositories
         {
             var algoTask = await _context.AlgoTasks
                 .AsNoTracking()
+                .Where(x => x.DeletedAt == null)
                 .FirstOrDefaultAsync(x => x.Id == algoTaskId);
 
             if (algoTask == null)
@@ -167,7 +170,7 @@ namespace SIFS.Infrastructure.Repositories
 
             var taskList = await _context.TaskLists
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == algoTask.TaskId);
+                .FirstOrDefaultAsync(x => x.Id == algoTask.TaskId && x.DeletedAt == null);
 
             if (taskList == null || (!canViewAllTasks && taskList.UserId != userId))
                 return null;
@@ -261,23 +264,12 @@ namespace SIFS.Infrastructure.Repositories
             typeof(TaskItem).GetProperty("AlgoName")!.SetValue(task, entity.AlgoName ?? algoType.Name);
             typeof(TaskItem).GetProperty("AlgoApiUrl")!.SetValue(task, entity.AlgoApiUrl);
             typeof(TaskItem).GetProperty("FailureReason")!.SetValue(task, entity.FailureReason);
+            typeof(TaskItem).GetProperty("StartedAt")!.SetValue(task, entity.StartedAt);
+            typeof(TaskItem).GetProperty("FinishedAt")!.SetValue(task, entity.FinishedAt);
+            typeof(TaskItem).GetProperty("DeletedAt")!.SetValue(task, entity.DeletedAt);
 
-            // 状态机映射
-            switch ((AlgoTaskStatus)entity.Status)
-            {
-                case AlgoTaskStatus.pending:
-                    // 默认就是 pending
-                    break;
-                case AlgoTaskStatus.running:
-                    task.MarkAsRunning();
-                    break;
-                case AlgoTaskStatus.done:
-                    task.MarkAsDone(new DetectionResult()); // 占位
-                    break;
-                case AlgoTaskStatus.failed:
-                    task.MarkAsFailed();
-                    break;
-            }
+            if (Enum.IsDefined(typeof(AlgoTaskStatus), entity.Status))
+                typeof(TaskItem).GetProperty("Status")!.SetValue(task, (AlgoTaskStatus)entity.Status);
 
             return task;
         }

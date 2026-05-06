@@ -46,6 +46,11 @@ namespace SIFS.Application.AlgoTaskApp
                 return;
             }
             var task = taskResult.Data;
+            if (task.Status != SIFS.Domain.Enum.AlgoTaskStatus.pending)
+            {
+                _logger.LogInformation("算法任务 {AlgoTaskId} 当前状态为 {Status}，跳过执行", algoTaskId, task.Status);
+                return;
+            }
 
             try
             {

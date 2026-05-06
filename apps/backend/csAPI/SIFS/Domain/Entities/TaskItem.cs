@@ -16,6 +16,9 @@ namespace SIFS.Domain.Entities
         public string? AlgoName { get; private set; }
         public string? AlgoApiUrl { get; private set; }
         public string? FailureReason { get; private set; }
+        public DateTime? StartedAt { get; private set; }
+        public DateTime? FinishedAt { get; private set; }
+        public DateTime? DeletedAt { get; private set; }
         public int? Level { get; private set; }
         public AlgoTaskStatus Status { get; private set; } = AlgoTaskStatus.pending;
         public string Description { get; private set; } = null!;
@@ -51,7 +54,10 @@ namespace SIFS.Domain.Entities
                 AlgoModelId = AlgoModelId,
                 AlgoName = AlgoName,
                 AlgoApiUrl = AlgoApiUrl,
-                FailureReason = FailureReason
+                FailureReason = FailureReason,
+                StartedAt = StartedAt,
+                FinishedAt = FinishedAt,
+                DeletedAt = DeletedAt
             };
         }
         public void MarkAsRunning()
@@ -60,6 +66,7 @@ namespace SIFS.Domain.Entities
             {
                 Status = AlgoTaskStatus.running;
                 UpdatedAt = DateTime.UtcNow;
+                StartedAt ??= UpdatedAt;
             }
         }
         public void MarkAsDone(DetectionResult result)
@@ -69,6 +76,7 @@ namespace SIFS.Domain.Entities
                 Status = AlgoTaskStatus.done;
                 Result = Result<DetectionResult>.Success(result);
                 UpdatedAt = DateTime.UtcNow;
+                FinishedAt = UpdatedAt;
             }
         }
         public void MarkAsFailed(string? failureReason = null)
@@ -76,6 +84,7 @@ namespace SIFS.Domain.Entities
             Status = AlgoTaskStatus.failed;
             FailureReason = failureReason;
             UpdatedAt = DateTime.UtcNow;
+            FinishedAt = UpdatedAt;
         }
     }
 }

@@ -62,6 +62,10 @@ public partial class SIFSContext : DbContext
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.TaskId).IsFixedLength();
             entity.HasIndex(e => e.AlgoModelId, "ix_algo_task_algo_model_id");
+            entity.HasIndex(e => e.Status, "ix_algo_task_status");
+            entity.HasIndex(e => e.StartedAt, "ix_algo_task_started_at");
+            entity.HasIndex(e => e.FinishedAt, "ix_algo_task_finished_at");
+            entity.HasIndex(e => e.DeletedAt, "ix_algo_task_deleted_at");
         });
 
         modelBuilder.Entity<AlgoType>(entity =>
@@ -174,6 +178,9 @@ public partial class SIFSContext : DbContext
 
             entity.Property(e => e.Id).IsFixedLength();
             entity.Property(e => e.UserId).IsFixedLength();
+            entity.HasIndex(e => e.UserId, "ix_task_list_user_id");
+            entity.HasIndex(e => e.CreatedAt, "ix_task_list_created_at");
+            entity.HasIndex(e => e.DeletedAt, "ix_task_list_deleted_at");
         });
 
         modelBuilder.Entity<TaskTypeMap>(entity =>

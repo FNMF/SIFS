@@ -29,4 +29,7 @@ public partial class TaskList
 
     [Column("level")]
     public int? Level { get; set; }
+
+    [Column("deleted_at", TypeName = "datetime")]
+    public DateTime? DeletedAt { get; set; }
 }

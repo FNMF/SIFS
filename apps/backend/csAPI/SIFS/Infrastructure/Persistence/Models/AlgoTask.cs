@@ -24,6 +24,12 @@ public partial class AlgoTask
     [Column("updated_at", TypeName = "datetime")]
     public DateTime UpdatedAt { get; set; }
 
+    [Column("started_at", TypeName = "datetime")]
+    public DateTime? StartedAt { get; set; }
+
+    [Column("finished_at", TypeName = "datetime")]
+    public DateTime? FinishedAt { get; set; }
+
     [Column("status")]
     public int Status { get; set; }
 
@@ -40,4 +46,7 @@ public partial class AlgoTask
 
     [Column("failure_reason", TypeName = "text")]
     public string? FailureReason { get; set; }
+
+    [Column("deleted_at", TypeName = "datetime")]
+    public DateTime? DeletedAt { get; set; }
 }
