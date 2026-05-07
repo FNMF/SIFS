@@ -8,5 +8,6 @@ namespace SIFS.Application.Dashboard
         Task<List<DashboardRecentLogDto>> GetRecentLogsAsync(int limit);
         Task<DashboardTaskStatusCountDto> GetTaskStatusCountAsync();
         Task<DashboardAlgoStatusCountDto> GetAlgoStatusCountAsync();
+        Task<SIFS.Shared.Results.Paged<SIFS.Application.ModelHealthChecks.ModelHealthStatusDto>> GetAlgoHealthAsync(SIFS.Application.ModelHealthChecks.ModelHealthStatusQuery query);
     }
 }

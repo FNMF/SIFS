@@ -11,6 +11,8 @@ namespace SIFS.Application.Dashboard
         public int AlgoTotalCount { get; set; }
         public int AlgoEnabledCount { get; set; }
         public int AlgoOfflineCount { get; set; }
+        public int AlgoTimeoutCount { get; set; }
+        public int AlgoOnlineCount { get; set; }
     }
 
     public class DashboardRecentTaskDto
@@ -56,6 +58,8 @@ namespace SIFS.Application.Dashboard
         public int Total { get; set; }
         public int Enabled { get; set; }
         public int Disabled { get; set; }
+        public int Online { get; set; }
         public int Offline { get; set; }
+        public int Timeout { get; set; }
     }
 }

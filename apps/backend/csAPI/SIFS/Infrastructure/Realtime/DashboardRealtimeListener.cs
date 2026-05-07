@@ -20,6 +20,7 @@ namespace SIFS.Infrastructure.Realtime
             [AppEventTypes.AlgoUpdated] = "algo.status.changed",
             [AppEventTypes.AlgoEnabled] = "algo.status.changed",
             [AppEventTypes.AlgoDisabled] = "algo.status.changed",
+            [AppEventTypes.AlgoHealthChanged] = "algo.health.changed",
             [AppEventTypes.ResultDownloaded] = "operation.log.created"
         };
 
@@ -74,6 +75,8 @@ namespace SIFS.Infrastructure.Realtime
                 target_type = appEvent.TargetType,
                 target_id = appEvent.TargetId,
                 status = GetPayloadValue(appEvent, "to_status"),
+                health_status = GetPayloadValue(appEvent, "status"),
+                response_time_ms = GetPayloadValue(appEvent, "response_time_ms"),
                 operation_type = appEvent.EventType,
                 created_at = appEvent.CreatedAt
             };

@@ -12,6 +12,7 @@ namespace SIFS.Shared.Extensions.EventBus
         public const string AlgoUpdated = "ALGO_UPDATED";
         public const string AlgoEnabled = "ALGO_ENABLED";
         public const string AlgoDisabled = "ALGO_DISABLED";
+        public const string AlgoHealthChanged = "ALGO_HEALTH_CHANGED";
         public const string ResultDownloaded = "RESULT_DOWNLOADED";
 
         public static readonly IReadOnlyList<string> All = new[]

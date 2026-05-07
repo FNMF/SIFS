@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SIFS.Application.Dashboard;
+using SIFS.Application.ModelHealthChecks;
 using SIFS.Infrastructure.Authorization;
 
 namespace SIFS.Api.Admin
@@ -32,7 +33,9 @@ namespace SIFS.Api.Admin
                 success_task_count = summary.SuccessTaskCount,
                 algo_total_count = summary.AlgoTotalCount,
                 algo_enabled_count = summary.AlgoEnabledCount,
-                algo_offline_count = summary.AlgoOfflineCount
+                algo_offline_count = summary.AlgoOfflineCount,
+                algo_timeout_count = summary.AlgoTimeoutCount,
+                algo_online_count = summary.AlgoOnlineCount
             });
         }
 
@@ -114,7 +117,34 @@ namespace SIFS.Api.Admin
                 total = result.Total,
                 enabled = result.Enabled,
                 disabled = result.Disabled,
-                offline = result.Offline
+                online = result.Online,
+                offline = result.Offline,
+                timeout = result.Timeout
+            });
+        }
+
+        [HttpGet("algo-health")]
+        [RequirePermission("algo:view")]
+        public async Task<IActionResult> GetAlgoHealth([FromQuery] ModelHealthStatusQuery query)
+        {
+            var result = await _dashboardService.GetAlgoHealthAsync(query);
+            return Ok(new
+            {
+                items = result.Data.Select(x => new
+                {
+                    algo_model_id = x.AlgoModelId,
+                    name = x.Name,
+                    enabled = x.Enabled,
+                    api_url = x.ApiUrl,
+                    health_status = x.HealthStatus,
+                    response_time_ms = x.ResponseTimeMs,
+                    checked_at = x.CheckedAt,
+                    failure_reason = x.FailureReason,
+                    description = x.Description
+                }),
+                total = result.Total,
+                page = result.PageNumber,
+                page_size = result.PageSize
             });
         }
     }

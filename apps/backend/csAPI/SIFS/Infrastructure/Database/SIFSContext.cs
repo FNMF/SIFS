@@ -33,6 +33,8 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<OperationLog> OperationLogs { get; set; }
 
+    public virtual DbSet<ModelHealthCheck> ModelHealthChecks { get; set; }
+
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
     public virtual DbSet<RolePermission> RolePermissions { get; set; }
@@ -141,6 +143,22 @@ public partial class SIFSContext : DbContext
             entity.Property(e => e.ActorId).IsFixedLength();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.Success).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<ModelHealthCheck>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.AlgoModelId, "ix_model_health_checks_algo_model_id");
+            entity.HasIndex(e => e.Status, "ix_model_health_checks_status");
+            entity.HasIndex(e => e.CheckedAt, "ix_model_health_checks_checked_at");
+
+            entity.Property(e => e.CheckedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne<AlgoModel>()
+                .WithMany()
+                .HasForeignKey(e => e.AlgoModelId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UserRole>(entity =>

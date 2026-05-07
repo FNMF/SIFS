@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SIFS.Application.ModelHealthChecks;
 using SIFS.Domain.Enum;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.Persistence.Models;
@@ -8,16 +9,16 @@ namespace SIFS.Application.Dashboard
     public class DashboardService : IDashboardService
     {
         private readonly SIFSContext _context;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IModelHealthCheckService _modelHealthCheckService;
         private readonly ILogger<DashboardService> _logger;
 
         public DashboardService(
             SIFSContext context,
-            IHttpClientFactory httpClientFactory,
+            IModelHealthCheckService modelHealthCheckService,
             ILogger<DashboardService> logger)
         {
             _context = context;
-            _httpClientFactory = httpClientFactory;
+            _modelHealthCheckService = modelHealthCheckService;
             _logger = logger;
         }
 
@@ -37,7 +38,9 @@ namespace SIFS.Application.Dashboard
                 SuccessTaskCount = taskStatusCounts.GetValueOrDefault("done"),
                 AlgoTotalCount = algoStatus.Total,
                 AlgoEnabledCount = algoStatus.Enabled,
-                AlgoOfflineCount = algoStatus.Offline
+                AlgoOfflineCount = algoStatus.Offline,
+                AlgoTimeoutCount = algoStatus.Timeout,
+                AlgoOnlineCount = algoStatus.Online
             };
         }
 
@@ -117,15 +120,22 @@ namespace SIFS.Application.Dashboard
                 .ToListAsync();
 
             var enabled = algos.Where(x => x.Enabled).ToList();
-            var offlineResults = await Task.WhenAll(enabled.Select(IsAlgoOfflineAsync));
+            var health = await _modelHealthCheckService.GetDashboardAlgoHealthSummaryAsync();
 
             return new DashboardAlgoStatusCountDto
             {
                 Total = algos.Count,
                 Enabled = enabled.Count,
                 Disabled = algos.Count(x => !x.Enabled),
-                Offline = offlineResults.Count(x => x)
+                Online = health.Online,
+                Offline = health.Offline,
+                Timeout = health.Timeout
             };
+        }
+
+        public Task<SIFS.Shared.Results.Paged<ModelHealthStatusDto>> GetAlgoHealthAsync(ModelHealthStatusQuery query)
+        {
+            return _modelHealthCheckService.ListAlgoHealthStatusesAsync(query);
         }
 
         private async Task<List<DashboardRecentTaskDto>> BuildRecentTasksAsync(List<TaskList> taskLists)
@@ -190,25 +200,6 @@ namespace SIFS.Application.Dashboard
                     (task, algos) => GetCurrentStatus(task.DeletedAt != null, algos.ToList()))
                 .GroupBy(status => status)
                 .ToDictionary(x => x.Key, x => x.Count());
-        }
-
-        private async Task<bool> IsAlgoOfflineAsync(AlgoModel algo)
-        {
-            if (!Uri.TryCreate(algo.ApiUrl, UriKind.Absolute, out var uri))
-                return true;
-
-            try
-            {
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-                var client = _httpClientFactory.CreateClient();
-                using var response = await client.GetAsync(uri, timeout.Token);
-                return !response.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Algorithm ping failed. AlgoId={AlgoId}, Url={Url}", algo.Id, algo.ApiUrl);
-                return true;
-            }
         }
 
         private static string GetCurrentStatus(TaskList task, List<AlgoTask> algoTasks)

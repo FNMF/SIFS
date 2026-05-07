@@ -156,6 +156,7 @@ namespace SIFS
 
             builder.Services.AddHostedService<AlgoTaskWorker>();
             builder.Services.AddHostedService<AlgoTaskRecovery>();
+            builder.Services.AddHostedService<ModelHealthCheckWorker>();
 
             // CORS
             builder.Services.AddCors(options =>
@@ -163,7 +164,7 @@ namespace SIFS
                 options.AddPolicy("Frontend", policy =>
                 {
                     policy
-                        .WithOrigins("http://localhost:5173")
+                        .WithOrigins("http://localhost:5173", "http://localhost:5174")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
