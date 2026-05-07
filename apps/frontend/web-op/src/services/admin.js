@@ -47,6 +47,7 @@ export const operationLogApi = {
 }
 
 export const rbacApi = {
+  me: () => request('/api/admin/rbac/me', {}, { silent: true }),
   myPermissions: () => request('/api/admin/rbac/permissions/me', {}, { silent: true }),
   adminCheck: () => request('/api/admin/rbac/roles/admin-check', {}, { silent: true })
 }

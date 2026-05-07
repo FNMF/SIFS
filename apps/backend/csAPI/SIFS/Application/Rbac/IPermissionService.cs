@@ -8,6 +8,8 @@ namespace SIFS.Application.Rbac
 
         Task<Result<List<string>>> GetUserPermissionsAsync(Guid userId);
 
+        Task<Result<List<string>>> GetUserRolesAsync(Guid userId);
+
         Task<Result<bool>> HasPermissionAsync(Guid userId, string permissionCode);
 
         Task<Result<bool>> HasRoleAsync(Guid userId, string roleName);

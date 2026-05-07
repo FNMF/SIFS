@@ -82,6 +82,22 @@ namespace SIFS.Application.Rbac
             return Result<List<string>>.Success(permissions);
         }
 
+        public async Task<Result<List<string>>> GetUserRolesAsync(Guid userId)
+        {
+            var roles = await (
+                    from role in _context.Roles
+                    join userRole in _context.UserRoles
+                        on role.Id equals userRole.RoleId
+                    where userRole.UserId == userId
+                    select role.Name
+                )
+                .Distinct()
+                .OrderBy(name => name)
+                .ToListAsync();
+
+            return Result<List<string>>.Success(roles);
+        }
+
         public async Task<Result<bool>> HasPermissionAsync(Guid userId, string permissionCode)
         {
             if (string.IsNullOrWhiteSpace(permissionCode))

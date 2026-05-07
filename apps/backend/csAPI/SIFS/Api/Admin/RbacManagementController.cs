@@ -34,6 +34,30 @@ namespace SIFS.Api.Admin
             return BadRequest(result.Message);
         }
 
+        [HttpGet("me")]
+        [RequirePermission("admin:access")]
+        public async Task<IActionResult> GetCurrentUserRbac()
+        {
+            var userId = _currentService.RequiredUuid;
+            var roles = await _permissionService.GetUserRolesAsync(userId);
+            var permissions = await _permissionService.GetUserPermissionsAsync(userId);
+
+            if (!roles.IsSuccess)
+                return BadRequest(roles.Message);
+            if (!permissions.IsSuccess)
+                return BadRequest(permissions.Message);
+
+            return Ok(new
+            {
+                user = new
+                {
+                    id = userId,
+                    roles = roles.Data,
+                    permissions = permissions.Data
+                }
+            });
+        }
+
         [HttpGet("roles/admin-check")]
         [RequireRole("admin")]
         public IActionResult CheckAdminRole()

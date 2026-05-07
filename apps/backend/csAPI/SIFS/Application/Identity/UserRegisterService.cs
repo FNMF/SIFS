@@ -4,6 +4,7 @@ using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Helpers;
 using SIFS.Shared.Helpers.JWT;
 using SIFS.Shared.Results;
+using SIFS.Application.Rbac;
 
 namespace SIFS.Application.Identity
 {
@@ -12,11 +13,17 @@ namespace SIFS.Application.Identity
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IJwtHelper _jwtHelper;
-        public UserRegisterService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository, IJwtHelper jwtHelper)
+        private readonly IPermissionService _permissionService;
+        public UserRegisterService(
+            IUserRepository userRepository,
+            IRefreshTokenRepository refreshTokenRepository,
+            IJwtHelper jwtHelper,
+            IPermissionService permissionService)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _jwtHelper = jwtHelper;
+            _permissionService = permissionService;
         }
         
         public async Task<Result<LoginTokenResult>> CreateUserAsync(UserRegisterDto userCreateDto)
@@ -38,6 +45,10 @@ namespace SIFS.Application.Identity
                 Id = result.Data.Id,
                 Account = result.Data.Account
             };
+
+            await _permissionService.AssignRolesToUserAsync(user.Id, new[] { "user" });
+            userReadDto.Roles = (await _permissionService.GetUserRolesAsync(user.Id)).Data ?? new List<string>();
+            userReadDto.Permissions = (await _permissionService.GetUserPermissionsAsync(user.Id)).Data ?? new List<string>();
 
             var accessToken = _jwtHelper.UserGenerateToken(user.Id, user.Account);
             var refreshToken = await _refreshTokenRepository.AddWeekRefreshTokenAsync(user.Id);

@@ -2,6 +2,7 @@ const ACCESS_TOKEN_KEY = 'sifs_access_token'
 const REFRESH_TOKEN_KEY = 'sifs_refresh_token'
 const USER_INFO_KEY = 'sifs_user_info'
 const PERMISSIONS_KEY = 'sifs_admin_permissions'
+const ROLES_KEY = 'sifs_admin_roles'
 const LATEST_RESULT_KEY = 'sifs_latest_result'
 
 function readJson(key, fallback = null) {
@@ -41,11 +42,16 @@ export const tokenStorage = {
   setPermissions: (permissions) => writeJson(PERMISSIONS_KEY, permissions || []),
   removePermissions: () => localStorage.removeItem(PERMISSIONS_KEY),
 
+  getRoles: () => readJson(ROLES_KEY, []),
+  setRoles: (roles) => writeJson(ROLES_KEY, roles || []),
+  removeRoles: () => localStorage.removeItem(ROLES_KEY),
+
   clearAuth() {
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
     localStorage.removeItem(USER_INFO_KEY)
     localStorage.removeItem(PERMISSIONS_KEY)
+    localStorage.removeItem(ROLES_KEY)
   }
 }
 

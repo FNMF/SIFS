@@ -2,7 +2,7 @@
   <AdminLayout title="算法管理" subtitle="维护算法 API 地址、启用状态和健康结果">
     <template #actions>
       <el-button :icon="Refresh" :loading="loading" @click="loadData">刷新</el-button>
-      <el-button type="primary" @click="openCreate">新增算法</el-button>
+      <el-button v-if="authStore.hasPermission('algo:create')" type="primary" @click="openCreate">新增算法</el-button>
     </template>
 
     <section class="op-panel">
@@ -35,8 +35,9 @@
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="authStore.hasPermission('algo:update')" size="small" @click="openEdit(row)">编辑</el-button>
             <el-button
+              v-if="authStore.hasPermission('algo:enable')"
               size="small"
               :type="row.enabled ? 'warning' : 'success'"
               :loading="operatingId === row.id"
@@ -89,8 +90,10 @@ import { Refresh } from '@element-plus/icons-vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { algoApi, dashboardApi } from '../services/admin'
+import { useAuthStore } from '../stores/auth'
 import { formatTime, tryParseJson } from '../utils/format'
 
+const authStore = useAuthStore()
 const loading = ref(false)
 const saving = ref(false)
 const operatingId = ref(null)

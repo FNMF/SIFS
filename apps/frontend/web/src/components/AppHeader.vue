@@ -18,6 +18,7 @@ const authStore = useAuthStore()
 const isScrolled = ref(false)
 
 const isLoggedIn = computed(() => authStore.isLoggedIn.value)
+const canEnterAdmin = computed(() => authStore.isAdmin())
 const username = computed(() => {
   const user = authStore.state.userInfo
   return user?.Account || user?.account || '用户'
@@ -48,6 +49,10 @@ function goUpload() {
 
 function goHistory() {
   router.push('/history')
+}
+
+function goAdmin() {
+  window.location.href = 'http://127.0.0.1:5174/admin/dashboard'
 }
 
 function goTry() {
@@ -124,6 +129,7 @@ onBeforeUnmount(() => {
         <span class="user-welcome">你好，{{ username }}</span>
         <el-button v-if="isLanding" type="primary" round @click="goTry">立即尝试</el-button>
         <el-button v-if="isApp" type="primary" round @click="goUpload">新建任务</el-button>
+        <el-button v-if="canEnterAdmin" round @click="goAdmin">管理后台</el-button>
         <el-button round @click="handleLogout">退出登录</el-button>
       </div>
     </div>

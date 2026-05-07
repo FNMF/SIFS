@@ -1,6 +1,8 @@
 const ACCESS_TOKEN_KEY = 'sifs_access_token'
 const REFRESH_TOKEN_KEY = 'sifs_refresh_token'
 const USER_INFO_KEY = 'sifs_user_info'
+const PERMISSIONS_KEY = 'sifs_admin_permissions'
+const ROLES_KEY = 'sifs_admin_roles'
 const LATEST_RESULT_KEY = 'sifs_latest_result'
 
 export const tokenStorage = {
@@ -57,10 +59,38 @@ export const tokenStorage = {
     localStorage.removeItem(USER_INFO_KEY)
   },
 
+  getPermissions() {
+    try {
+      return JSON.parse(localStorage.getItem(PERMISSIONS_KEY) || '[]')
+    } catch {
+      localStorage.removeItem(PERMISSIONS_KEY)
+      return []
+    }
+  },
+
+  setPermissions(permissions) {
+    localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(permissions || []))
+  },
+
+  getRoles() {
+    try {
+      return JSON.parse(localStorage.getItem(ROLES_KEY) || '[]')
+    } catch {
+      localStorage.removeItem(ROLES_KEY)
+      return []
+    }
+  },
+
+  setRoles(roles) {
+    localStorage.setItem(ROLES_KEY, JSON.stringify(roles || []))
+  },
+
   clearAuth() {
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
     localStorage.removeItem(USER_INFO_KEY)
+    localStorage.removeItem(PERMISSIONS_KEY)
+    localStorage.removeItem(ROLES_KEY)
   }
 }
 

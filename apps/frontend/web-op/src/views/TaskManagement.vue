@@ -40,9 +40,9 @@
         <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="openDetail(row.taskId)">详情</el-button>
-            <el-button size="small" :loading="operatingId === row.taskId" @click="operate('cancel', row)">取消</el-button>
-            <el-button size="small" type="primary" :loading="operatingId === row.taskId" @click="operate('retry', row)">重试</el-button>
-            <el-button size="small" type="danger" :loading="operatingId === row.taskId" @click="operate('delete', row)">删除</el-button>
+            <el-button v-if="authStore.hasPermission('task:delete')" size="small" :loading="operatingId === row.taskId" @click="operate('cancel', row)">取消</el-button>
+            <el-button v-if="authStore.hasPermission('task:retry')" size="small" type="primary" :loading="operatingId === row.taskId" @click="operate('retry', row)">重试</el-button>
+            <el-button v-if="authStore.hasPermission('task:delete')" size="small" type="danger" :loading="operatingId === row.taskId" @click="operate('delete', row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -105,8 +105,10 @@ import { Refresh } from '@element-plus/icons-vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { taskApi } from '../services/admin'
+import { useAuthStore } from '../stores/auth'
 import { formatDuration, formatTime } from '../utils/format'
 
+const authStore = useAuthStore()
 const loading = ref(false)
 const detailLoading = ref(false)
 const detailVisible = ref(false)

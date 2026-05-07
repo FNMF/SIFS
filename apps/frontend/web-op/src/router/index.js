@@ -15,11 +15,11 @@ const routes = [
   { path: '/login', name: 'login', component: Login },
   { path: '/403', name: 'forbidden', component: Forbidden },
   { path: '/dashboard', redirect: '/admin/dashboard' },
-  { path: '/admin/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/algos', name: 'algos', component: AlgoManagement, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/tasks', name: 'tasks', component: TaskManagement, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/operation-logs', name: 'operation-logs', component: OperationLogs, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/users/roles', name: 'user-roles', component: UserRoles, meta: { requiresAuth: true, requiresAdmin: true } }
+  { path: '/admin/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true, requiredPermission: 'admin:access' } },
+  { path: '/admin/algos', name: 'algos', component: AlgoManagement, meta: { requiresAuth: true, requiredPermission: 'algo:view' } },
+  { path: '/admin/tasks', name: 'tasks', component: TaskManagement, meta: { requiresAuth: true, requiredPermission: 'task:view:all' } },
+  { path: '/admin/operation-logs', name: 'operation-logs', component: OperationLogs, meta: { requiresAuth: true, requiredPermission: 'log:view' } },
+  { path: '/admin/users/roles', name: 'user-roles', component: UserRoles, meta: { requiresAuth: true, requiredPermission: 'admin:access' } }
 ]
 
 const router = createRouter({
@@ -36,14 +36,15 @@ router.beforeEach(async (to, from, next) => {
     return
   }
 
-  if (to.meta.requiresAdmin) {
+  if (to.meta.requiredPermission) {
     try {
-      if (!authStore.state.permissions.includes('admin:access')) {
-        const permissions = await rbacApi.myPermissions()
-        authStore.setPermissions(permissions)
+      if (!authStore.state.permissions.length) {
+        const data = await rbacApi.me()
+        authStore.setRoles(data?.user?.roles || [])
+        authStore.setPermissions(data?.user?.permissions || [])
       }
 
-      if (!authStore.state.permissions.includes('admin:access')) {
+      if (!authStore.hasPermission(to.meta.requiredPermission)) {
         next('/403')
         return
       }

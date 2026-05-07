@@ -5,6 +5,7 @@ using SIFS.Shared.Helpers;
 using SIFS.Shared.Helpers.JWT;
 using SIFS.Shared.Results;
 using SIFS.Shared.Extensions.EventBus;
+using SIFS.Application.Rbac;
 
 namespace SIFS.Application.Identity
 {
@@ -17,6 +18,7 @@ namespace SIFS.Application.Identity
         private readonly IJwtHelper _jwtHelper;
         private readonly IEventBus _eventBus;
         private readonly IAppEventRequestContextFactory _requestContextFactory;
+        private readonly IPermissionService _permissionService;
         public UserLoginService(
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
@@ -24,7 +26,8 @@ namespace SIFS.Application.Identity
             ICurrentService currentService,
             IJwtHelper jwtHelper,
             IEventBus eventBus,
-            IAppEventRequestContextFactory requestContextFactory)
+            IAppEventRequestContextFactory requestContextFactory,
+            IPermissionService permissionService)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
@@ -33,6 +36,7 @@ namespace SIFS.Application.Identity
             _jwtHelper = jwtHelper;
             _eventBus = eventBus;
             _requestContextFactory = requestContextFactory;
+            _permissionService = permissionService;
         }
         public async Task<Result<LoginTokenResult>> LoginAsync(UserLoginDto userLoginDto)
         {
@@ -46,7 +50,9 @@ namespace SIFS.Application.Identity
             var userReadDto = new UserReadDto
             {
                 Id = user.Id,
-                Account = user.Account
+                Account = user.Account,
+                Roles = (await _permissionService.GetUserRolesAsync(user.Id)).Data ?? new List<string>(),
+                Permissions = (await _permissionService.GetUserPermissionsAsync(user.Id)).Data ?? new List<string>()
             };
             var token = _jwtHelper.UserGenerateToken(user.Id, user.Account);
             var refreshToken = await _refreshTokenRepository.AddWeekRefreshTokenAsync(user.Id);
