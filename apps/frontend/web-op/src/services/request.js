@@ -12,10 +12,14 @@ function processQueue(token) {
     if (token) {
       resolve(token)
     } else {
-      reject(new Error('登录已失效'))
+      reject(new Error('登录状态已失效'))
     }
   })
   pendingQueue = []
+}
+
+function unwrapLoginData(data) {
+  return data?.Data || data?.data || data
 }
 
 async function doRefreshToken() {
@@ -42,41 +46,31 @@ async function doRefreshToken() {
     throw new Error('登录已过期，请重新登录')
   }
 
-  const data = await response.json()
+  const data = unwrapLoginData(await response.json())
+  const newAccessToken = data?.AccessToken || data?.accessToken || data
 
-  const loginData = data?.Data || data?.data || data
-  const newAccessToken = loginData?.AccessToken || loginData?.accessToken
-  const newRefreshToken = loginData?.RefreshToken || loginData?.refreshToken
-  const userInfo =
-    loginData?.UserReadDto ||
-    loginData?.userReadDto ||
-    authStore.state.userInfo
-
-  if (!newAccessToken || !newRefreshToken) {
+  if (!newAccessToken || typeof newAccessToken !== 'string') {
     authStore.clearAuth()
     throw new Error('刷新 token 返回数据无效')
   }
 
-  authStore.setAuth({
-    AccessToken: newAccessToken,
-    RefreshToken: newRefreshToken,
-    UserReadDto: userInfo
-  })
-
+  authStore.updateAccessToken(newAccessToken)
   return newAccessToken
 }
 
 async function parseResponse(response) {
   const contentType = response.headers.get('content-type') || ''
-  return contentType.includes('application/json')
-    ? await response.json()
-    : await response.text()
+  return contentType.includes('application/json') ? await response.json() : await response.text()
+}
+
+function getErrorMessage(data, fallback = '请求失败') {
+  if (typeof data === 'string') return data || fallback
+  return data?.message || data?.Message || data?.title || fallback
 }
 
 export async function request(url, options = {}, extra = {}) {
-  const { skipAutoRefresh = false } = extra
+  const { skipAutoRefresh = false, silent = false } = extra
   const authStore = useAuthStore()
-
   const headers = new Headers(options.headers || {})
   const token = tokenStorage.getAccessToken()
 
@@ -89,77 +83,55 @@ export async function request(url, options = {}, extra = {}) {
   }
 
   let response
-
   try {
     response = await fetch(`${API_BASE_URL}${url}`, {
       ...options,
       headers
     })
   } catch (error) {
-    ElMessage.error('无法连接到后端服务')
+    if (!silent) ElMessage.error('无法连接到后端服务')
     throw error
   }
 
   if (response.status === 401 && !skipAutoRefresh) {
-    try {
-      const newToken = await new Promise((resolve, reject) => {
-        pendingQueue.push({ resolve, reject })
+    const newToken = await new Promise((resolve, reject) => {
+      pendingQueue.push({ resolve, reject })
 
-        if (!isRefreshing) {
-          isRefreshing = true
-
-          doRefreshToken()
-            .then((token) => {
-              processQueue(token)
-            })
-            .catch((error) => {
-              authStore.clearAuth()
-              processQueue(null)
-              ElMessage.error(error.message || '登录已过期，请重新登录')
-            })
-            .finally(() => {
-              isRefreshing = false
-            })
-        }
-      })
-
-      const retryHeaders = new Headers(options.headers || {})
-      if (!retryHeaders.has('Content-Type') && !(options.body instanceof FormData)) {
-        retryHeaders.set('Content-Type', 'application/json')
+      if (!isRefreshing) {
+        isRefreshing = true
+        doRefreshToken()
+          .then(processQueue)
+          .catch((error) => {
+            authStore.clearAuth()
+            processQueue(null)
+            if (!silent) ElMessage.error(error.message || '登录已过期，请重新登录')
+          })
+          .finally(() => {
+            isRefreshing = false
+          })
       }
-      retryHeaders.set('Authorization', `Bearer ${newToken}`)
+    })
 
-      const retryResponse = await fetch(`${API_BASE_URL}${url}`, {
-        ...options,
-        headers: retryHeaders
-      })
-
-      const retryData = await parseResponse(retryResponse)
-
-      if (!retryResponse.ok) {
-        const retryMessage =
-          typeof retryData === 'string'
-            ? retryData
-            : retryData?.message || retryData?.Message || '请求失败'
-        ElMessage.error(retryMessage)
-        throw new Error(retryMessage)
-      }
-
-      return retryData
-    } catch (error) {
-      throw error
+    const retryHeaders = new Headers(options.headers || {})
+    if (!retryHeaders.has('Content-Type') && !(options.body instanceof FormData)) {
+      retryHeaders.set('Content-Type', 'application/json')
     }
+    retryHeaders.set('Authorization', `Bearer ${newToken}`)
+
+    response = await fetch(`${API_BASE_URL}${url}`, {
+      ...options,
+      headers: retryHeaders
+    })
   }
 
   const data = await parseResponse(response)
 
   if (!response.ok) {
-    const message =
-      typeof data === 'string'
-        ? data
-        : data?.message || data?.Message || '请求失败'
-    ElMessage.error(message)
-    throw new Error(message)
+    const message = response.status === 403 ? '没有权限访问该资源' : getErrorMessage(data)
+    if (!silent) ElMessage.error(message)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
   }
 
   return data

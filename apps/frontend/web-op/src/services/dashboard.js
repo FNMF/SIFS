@@ -1,36 +1,25 @@
-import { request } from './request'
-
-function toQuery(params = {}) {
-  const search = new URLSearchParams()
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      search.set(key, value)
-    }
-  })
-  const query = search.toString()
-  return query ? `?${query}` : ''
-}
+import { dashboardApi } from './admin'
 
 export function getDashboardSummary() {
-  return request('/api/admin/dashboard/summary')
+  return dashboardApi.summary()
 }
 
 export function getRecentTasks(params = {}) {
-  return request(`/api/admin/dashboard/recent-tasks${toQuery(params)}`)
+  return dashboardApi.recentTasks(params)
 }
 
 export function getRecentLogs(params = {}) {
-  return request(`/api/admin/dashboard/recent-logs${toQuery(params)}`)
+  return dashboardApi.recentLogs(params)
 }
 
 export function getTaskStatusCount() {
-  return request('/api/admin/dashboard/task-status-count')
+  return dashboardApi.taskStatusCount()
 }
 
 export function getAlgoStatusCount() {
-  return request('/api/admin/dashboard/algo-status-count')
+  return dashboardApi.algoStatusCount()
 }
 
 export function getAlgoHealth(params = {}) {
-  return request(`/api/admin/dashboard/algo-health${toQuery(params)}`)
+  return dashboardApi.algoHealth(params)
 }
