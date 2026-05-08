@@ -1336,5 +1336,79 @@ DELIMITER ;
 CALL MigrationsScript();
 DROP PROCEDURE MigrationsScript;
 
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20260508102743_RemoveLegacyAlgorithmTypeTables') THEN
+
+    DROP TABLE IF EXISTS `task_type_map`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20260508102743_RemoveLegacyAlgorithmTypeTables') THEN
+
+    DROP TABLE IF EXISTS `algo_type`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20260508102743_RemoveLegacyAlgorithmTypeTables') THEN
+
+
+                    SET @drop_algo_type_column := (
+                        SELECT IF(
+                            EXISTS(
+                                SELECT 1
+                                FROM INFORMATION_SCHEMA.COLUMNS
+                                WHERE TABLE_SCHEMA = DATABASE()
+                                  AND TABLE_NAME = 'result_file'
+                                  AND COLUMN_NAME = 'algo_type'
+                            ),
+                            'ALTER TABLE `result_file` DROP COLUMN `algo_type`',
+                            'SELECT 1'
+                        )
+                    );
+                    PREPARE stmt FROM @drop_algo_type_column;
+                    EXECUTE stmt;
+                    DEALLOCATE PREPARE stmt;
+                
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20260508102743_RemoveLegacyAlgorithmTypeTables') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20260508102743_RemoveLegacyAlgorithmTypeTables', '9.0.0');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
 COMMIT;
 

@@ -19,8 +19,6 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<AlgoTask> AlgoTasks { get; set; }
 
-    public virtual DbSet<AlgoType> AlgoTypes { get; set; }
-
     public virtual DbSet<AlgoModel> AlgoModels { get; set; }
 
     public virtual DbSet<Localfile> Localfiles { get; set; }
@@ -45,8 +43,6 @@ public partial class SIFSContext : DbContext
 
     public virtual DbSet<TaskAudit> TaskAudits { get; set; }
 
-    public virtual DbSet<TaskTypeMap> TaskTypeMaps { get; set; }
-
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -70,13 +66,6 @@ public partial class SIFSContext : DbContext
             entity.HasIndex(e => e.StartedAt, "ix_algo_task_started_at");
             entity.HasIndex(e => e.FinishedAt, "ix_algo_task_finished_at");
             entity.HasIndex(e => e.DeletedAt, "ix_algo_task_deleted_at");
-        });
-
-        modelBuilder.Entity<AlgoType>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
         });
 
         modelBuilder.Entity<AlgoModel>(entity =>
@@ -226,14 +215,6 @@ public partial class SIFSContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.OperatorId)
                 .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<TaskTypeMap>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
-
-            entity.Property(e => e.Id).IsFixedLength();
-            entity.Property(e => e.TaskId).IsFixedLength();
         });
 
         modelBuilder.Entity<User>(entity =>

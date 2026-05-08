@@ -93,7 +93,6 @@ namespace SIFS.Application.AlgoTaskApp
                 {
                     Id = UuidV7.NewUuidV7(),
                     AlgoTaskId = task.Id,
-                    AlgoType = task.AlgoModelId ?? 0,
                     IsFake = result.IsFake,
                     Confidence = result.Confidence,
                     MaskLocalUrl = result.MaskUrl,

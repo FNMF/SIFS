@@ -8,7 +8,6 @@ DROP TABLE IF EXISTS user_role;
 DROP TABLE IF EXISTS permission;
 DROP TABLE IF EXISTS role;
 
-TRUNCATE TABLE task_type_map;
 TRUNCATE TABLE result_file;
 TRUNCATE TABLE localfile;
 TRUNCATE TABLE task_audits;
@@ -22,7 +21,6 @@ TRUNCATE TABLE role_permissions;
 TRUNCATE TABLE permissions;
 TRUNCATE TABLE roles;
 TRUNCATE TABLE algo_models;
-TRUNCATE TABLE algo_type;
 TRUNCATE TABLE user;
 
 SET FOREIGN_KEY_CHECKS = 1;

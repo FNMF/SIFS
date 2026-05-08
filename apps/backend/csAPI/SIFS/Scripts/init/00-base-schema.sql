@@ -9,12 +9,6 @@ CREATE TABLE IF NOT EXISTS `user` (
     PRIMARY KEY (`id`)
 ) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS `algo_type` (
-    `id` int NOT NULL,
-    `name` varchar(255) NOT NULL,
-    PRIMARY KEY (`id`)
-) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
 CREATE TABLE IF NOT EXISTS `task_list` (
     `id` binary(16) NOT NULL,
     `status` int NOT NULL,
@@ -45,17 +39,9 @@ CREATE TABLE IF NOT EXISTS `localfile` (
     PRIMARY KEY (`id`)
 ) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS `task_type_map` (
-    `id` binary(16) NOT NULL,
-    `task_id` binary(16) NOT NULL,
-    `type_id` int NOT NULL,
-    PRIMARY KEY (`id`)
-) CHARACTER SET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
 CREATE TABLE IF NOT EXISTS `result_file` (
     `id` binary(16) NOT NULL,
     `algo_task_id` binary(16) NOT NULL,
-    `algo_type` int NOT NULL,
     `is_fake` tinyint(1) NULL,
     `confidence` double NULL,
     `mask_local_url` varchar(255) NULL,

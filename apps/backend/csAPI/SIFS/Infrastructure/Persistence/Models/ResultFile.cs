@@ -18,9 +18,6 @@ public partial class ResultFile
     [MaxLength(16)]
     public Guid AlgoTaskId { get; set; }
 
-    [Column("algo_type")]
-    public int AlgoType { get; set; }
-
     [Column("is_fake")]
     public bool? IsFake { get; set; }
 
