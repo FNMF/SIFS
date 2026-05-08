@@ -101,7 +101,7 @@ namespace SIFS
             {
                 var accessToken = context.Request.Query["access_token"];
                 var path = context.HttpContext.Request.Path;
-                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/admin/dashboard/hub"))
+                if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/admin/dashboard/hub") || path.StartsWithSegments("/task-notifications/hub")))
                 {
                     context.Token = accessToken;
                 }
@@ -209,6 +209,7 @@ namespace SIFS
 
             app.MapControllers();
             app.MapHub<DashboardHub>("/admin/dashboard/hub");
+            app.MapHub<TaskNotificationHub>("/task-notifications/hub");
 
             app.Run();
         }

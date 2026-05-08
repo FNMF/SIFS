@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import { getDetectionTaskDetailApi } from '../services/detectionTask'
@@ -49,6 +49,14 @@ async function fetchDetail() {
   }
 }
 
+function handleAlgoTaskFinished(event) {
+  const payload = event.detail || {}
+  const taskId = payload.taskId || payload.task_id || payload.TaskId
+  if (taskId && String(taskId).toLowerCase() === String(route.params.guid).toLowerCase()) {
+    fetchDetail()
+  }
+}
+
 function getStatusText(status, statusText) {
   if (statusText) return statusText
   if (status === 2) return '已完成'
@@ -68,7 +76,14 @@ function openCompare(algo) {
   router.push(`/compare/${algo.guid}`)
 }
 
-onMounted(fetchDetail)
+onMounted(() => {
+  fetchDetail()
+  window.addEventListener('sifs:algo-task-finished', handleAlgoTaskFinished)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('sifs:algo-task-finished', handleAlgoTaskFinished)
+})
 </script>
 
 <template>

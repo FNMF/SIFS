@@ -6,6 +6,7 @@ using SIFS.Shared.Helpers;
 using SIFS.Shared.Results;
 using SIFS.Application.Rbac;
 using SIFS.Application.TaskAudits;
+using SIFS.Infrastructure.Realtime;
 
 namespace SIFS.Application.AlgoTaskApp
 {
@@ -18,6 +19,7 @@ namespace SIFS.Application.AlgoTaskApp
         private readonly IFileUrlBuilder _urlBuilder;
         private readonly IPermissionService _permissionService;
         private readonly ITaskAuditService _taskAuditService;
+        private readonly ITaskNotificationService _taskNotificationService;
         private readonly ILogger<AlgoTaskAppService> _logger;
 
         public AlgoTaskAppService(
@@ -28,6 +30,7 @@ namespace SIFS.Application.AlgoTaskApp
             IFileUrlBuilder urlBuilder,
             IPermissionService permissionService,
             ITaskAuditService taskAuditService,
+            ITaskNotificationService taskNotificationService,
             ILogger<AlgoTaskAppService> logger)
         {
             _algoTaskRepo = algoTaskRepo;
@@ -37,6 +40,7 @@ namespace SIFS.Application.AlgoTaskApp
             _urlBuilder = urlBuilder;
             _permissionService = permissionService;
             _taskAuditService = taskAuditService;
+            _taskNotificationService = taskNotificationService;
             _logger = logger;
         }
 
@@ -123,6 +127,19 @@ namespace SIFS.Application.AlgoTaskApp
                     // SignalR
                     // await _hub.NotifyCompleted(task.TaskId);
                 }
+
+                await _taskNotificationService.NotifyAlgoTaskFinishedAsync(new TaskFinishedNotification
+                {
+                    UserId = parentEntity.UserId,
+                    TaskId = task.TaskId,
+                    AlgoTaskId = task.Id,
+                    Status = "done",
+                    StatusText = "已完成",
+                    Algorithm = task.AlgoName,
+                    ResultUrl = result.MaskUrl,
+                    ParentTaskCompleted = detectionTask.IsCompleted,
+                    FinishedAt = DateTime.UtcNow
+                });
             }
             catch (Exception ex)
             {
@@ -137,6 +154,23 @@ namespace SIFS.Application.AlgoTaskApp
                     task.FailureReason,
                     null,
                     new { algo_task_id = task.Id, algorithm = task.AlgoName });
+
+                var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
+                if (parentEntityResult.IsSuccess)
+                {
+                    await _taskNotificationService.NotifyAlgoTaskFinishedAsync(new TaskFinishedNotification
+                    {
+                        UserId = parentEntityResult.Data.UserId,
+                        TaskId = task.TaskId,
+                        AlgoTaskId = task.Id,
+                        Status = "failed",
+                        StatusText = "失败",
+                        Algorithm = task.AlgoName,
+                        FailureReason = task.FailureReason,
+                        ParentTaskCompleted = false,
+                        FinishedAt = DateTime.UtcNow
+                    });
+                }
 
                 // TODO: 日志 / 重试
                 _logger.LogError(ex, "执行算法任务 {AlgoTaskId} 失败", algoTaskId);
