@@ -4,7 +4,7 @@ namespace SIFS.Infrastructure
 {
     public interface IAlgoTaskQueue
     {
-        ValueTask EnqueueAsync(Guid algoTaskId);
-        ChannelReader<Guid> Reader { get; }
+        ValueTask EnqueueAsync(AlgoTaskQueueItem item, CancellationToken cancellationToken = default);
+        ChannelReader<AlgoTaskQueueItem> Reader { get; }
     }
 }

@@ -1,4 +1,5 @@
 using SIFS.Application.TaskManagement;
+using SIFS.Infrastructure;
 using SIFS.Shared.Results;
 
 namespace SIFS.Infrastructure.Repositories
@@ -11,6 +12,6 @@ namespace SIFS.Infrastructure.Repositories
         Task<bool> ExistsForUserAsync(Guid taskId, Guid userId);
         Task CancelAsync(Guid taskId, string reason);
         Task SoftDeleteAsync(Guid taskId, string reason);
-        Task<(Guid NewTaskId, List<Guid> AlgoTaskIds)> RetryAsync(Guid taskId, Dictionary<Guid, SIFS.Infrastructure.External.AlgorithmEndpointResolution> algorithmEndpoints);
+        Task<(Guid NewTaskId, List<AlgoTaskQueueItem> AlgoTasks)> RetryAsync(Guid taskId, Dictionary<Guid, SIFS.Infrastructure.External.AlgorithmEndpointResolution> algorithmEndpoints);
     }
 }

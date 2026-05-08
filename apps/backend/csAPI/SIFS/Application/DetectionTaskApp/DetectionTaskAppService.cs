@@ -150,7 +150,7 @@ namespace SIFS.Application.DetectionTaskApp
                         await _fileRepo.CreateLocalfileAsync(localFile);
 
                         // 入队
-                        await _queue.EnqueueAsync(algoTask.Id);
+                        await _queue.EnqueueAsync(new AlgoTaskQueueItem(algoTask.Id, endpoint.AlgoModelId!.Value));
                         await _taskAuditService.RecordTransitionAsync(
                             detectionTask.Id,
                             "created",

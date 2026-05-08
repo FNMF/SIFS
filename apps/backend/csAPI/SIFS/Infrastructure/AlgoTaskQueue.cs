@@ -4,12 +4,14 @@ namespace SIFS.Infrastructure
 {
     public class AlgoTaskQueue : IAlgoTaskQueue
     {
-        private readonly Channel<Guid> _channel;
+        private readonly Channel<AlgoTaskQueueItem> _channel;
+        private readonly ILogger<AlgoTaskQueue> _logger;
 
-        public AlgoTaskQueue(IConfiguration configuration)
+        public AlgoTaskQueue(IConfiguration configuration, ILogger<AlgoTaskQueue> logger)
         {
+            _logger = logger;
             var capacity = Math.Max(configuration.GetValue("AlgoTaskWorker:QueueCapacity", 1000), 1);
-            _channel = Channel.CreateBounded<Guid>(new BoundedChannelOptions(capacity)
+            _channel = Channel.CreateBounded<AlgoTaskQueueItem>(new BoundedChannelOptions(capacity)
             {
                 FullMode = BoundedChannelFullMode.Wait,
                 SingleReader = false,
@@ -17,11 +19,12 @@ namespace SIFS.Infrastructure
             });
         }
 
-        public async ValueTask EnqueueAsync(Guid algoTaskId)
+        public async ValueTask EnqueueAsync(AlgoTaskQueueItem item, CancellationToken cancellationToken = default)
         {
-            await _channel.Writer.WriteAsync(algoTaskId);
+            await _channel.Writer.WriteAsync(item, cancellationToken);
+            _logger.LogInformation("Enqueued algo task {TaskId} for algo model {AlgoModelId}", item.TaskId, item.AlgoModelId);
         }
 
-        public ChannelReader<Guid> Reader => _channel.Reader;
+        public ChannelReader<AlgoTaskQueueItem> Reader => _channel.Reader;
     }
 }

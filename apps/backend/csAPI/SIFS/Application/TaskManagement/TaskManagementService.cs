@@ -137,10 +137,10 @@ namespace SIFS.Application.TaskManagement
             await _taskAuditService.RecordTransitionAsync(taskId, detail.CurrentStatus, "retried", "admin retried task", actorId, new { new_task_id = retryResult.NewTaskId });
             await _taskAuditService.RecordTransitionAsync(retryResult.NewTaskId, null, "created", "created from retry", actorId, new { source_task_id = taskId });
 
-            foreach (var algoTaskId in retryResult.AlgoTaskIds)
+            foreach (var algoTask in retryResult.AlgoTasks)
             {
-                await _queue.EnqueueAsync(algoTaskId);
-                await _taskAuditService.RecordTransitionAsync(retryResult.NewTaskId, "created", "queued", "task queued", actorId, new { algo_task_id = algoTaskId });
+                await _queue.EnqueueAsync(algoTask);
+                await _taskAuditService.RecordTransitionAsync(retryResult.NewTaskId, "created", "queued", "task queued", actorId, new { algo_task_id = algoTask.TaskId });
             }
 
             _eventBus.Publish(new AppEvent
@@ -152,7 +152,7 @@ namespace SIFS.Application.TaskManagement
                 Payload = new Dictionary<string, object?>
                 {
                     ["new_task_id"] = retryResult.NewTaskId,
-                    ["sub_task_count"] = retryResult.AlgoTaskIds.Count
+                    ["sub_task_count"] = retryResult.AlgoTasks.Count
                 },
                 RequestContext = _requestContextFactory.Create("retry task")
             });

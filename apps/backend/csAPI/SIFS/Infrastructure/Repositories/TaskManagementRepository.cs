@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SIFS.Application.TaskManagement;
 using SIFS.Domain.Enum;
+using SIFS.Infrastructure;
 using SIFS.Infrastructure.Database;
 using SIFS.Infrastructure.External;
 using SIFS.Infrastructure.Persistence.Models;
@@ -275,7 +276,7 @@ namespace SIFS.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<(Guid NewTaskId, List<Guid> AlgoTaskIds)> RetryAsync(Guid taskId, Dictionary<Guid, AlgorithmEndpointResolution> algorithmEndpoints)
+        public async Task<(Guid NewTaskId, List<AlgoTaskQueueItem> AlgoTasks)> RetryAsync(Guid taskId, Dictionary<Guid, AlgorithmEndpointResolution> algorithmEndpoints)
         {
             var original = await _context.TaskLists.AsNoTracking().FirstAsync(x => x.Id == taskId);
             var originalAlgoTasks = await _context.AlgoTasks.AsNoTracking()
@@ -289,7 +290,7 @@ namespace SIFS.Infrastructure.Repositories
                 .ToListAsync();
             var now = DateTime.UtcNow;
             var newTaskId = UuidV7.NewUuidV7();
-            var newAlgoTaskIds = new List<Guid>();
+            var newAlgoTasks = new List<AlgoTaskQueueItem>();
 
             _context.TaskLists.Add(new TaskList
             {
@@ -307,7 +308,7 @@ namespace SIFS.Infrastructure.Repositories
                     continue;
 
                 var newAlgoTaskId = UuidV7.NewUuidV7();
-                newAlgoTaskIds.Add(newAlgoTaskId);
+                newAlgoTasks.Add(new AlgoTaskQueueItem(newAlgoTaskId, endpoint.AlgoModelId!.Value));
 
                 _context.AlgoTasks.Add(new AlgoTask
                 {
@@ -337,7 +338,7 @@ namespace SIFS.Infrastructure.Repositories
             }
 
             await _context.SaveChangesAsync();
-            return (newTaskId, newAlgoTaskIds);
+            return (newTaskId, newAlgoTasks);
         }
 
         private async Task<List<TaskManagementListItemDto>> BuildListItemsAsync(List<TaskList> taskLists)

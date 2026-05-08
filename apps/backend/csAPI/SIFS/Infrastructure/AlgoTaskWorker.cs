@@ -24,7 +24,7 @@ namespace SIFS.Infrastructure
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("AlgoTaskWorker启动，WorkerCount: {WorkerCount}", _workerCount);
+            _logger.LogInformation("AlgoTaskWorker started, WorkerCount: {WorkerCount}", _workerCount);
 
             var workers = Enumerable.Range(1, _workerCount)
                 .Select(workerId => RunWorkerAsync(workerId, stoppingToken))
@@ -37,23 +37,31 @@ namespace SIFS.Infrastructure
         {
             try
             {
-                await foreach (var taskId in _queue.Reader.ReadAllAsync(stoppingToken))
+                await foreach (var item in _queue.Reader.ReadAllAsync(stoppingToken))
                 {
-                    await ProcessTaskAsync(workerId, taskId, stoppingToken);
+                    _logger.LogInformation(
+                        "Dequeued algo task {TaskId} for algo model {AlgoModelId}",
+                        item.TaskId,
+                        item.AlgoModelId);
+
+                    await ProcessTaskAsync(workerId, item, stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("AlgoTaskWorker-{WorkerId} 收到停止信号", workerId);
+                _logger.LogInformation("AlgoTaskWorker-{WorkerId} received stop signal", workerId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AlgoTaskWorker-{WorkerId} 消费循环异常退出", workerId);
+                _logger.LogError(ex, "AlgoTaskWorker-{WorkerId} consumer loop exited unexpectedly", workerId);
             }
         }
 
-        private async Task ProcessTaskAsync(int workerId, Guid taskId, CancellationToken stoppingToken)
+        private async Task ProcessTaskAsync(int workerId, AlgoTaskQueueItem item, CancellationToken stoppingToken)
         {
+            var taskId = item.TaskId;
+            var algoModelId = item.AlgoModelId;
+
             using var scope = _scopeFactory.CreateScope();
             var appService = scope.ServiceProvider.GetRequiredService<IAlgoTaskAppService>();
             var algoTaskRepository = scope.ServiceProvider.GetRequiredService<IAlgoTaskRepository>();
@@ -64,27 +72,47 @@ namespace SIFS.Infrastructure
 
                 if (!await algoTaskRepository.TryMarkRunningAsync(taskId))
                 {
-                    _logger.LogInformation("AlgoTaskWorker-{WorkerId} 未抢占任务，跳过执行，TaskId: {TaskId}", workerId, taskId);
+                    _logger.LogInformation(
+                        "AlgoTaskWorker-{WorkerId} skipped task because it was not claimable, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                        workerId,
+                        taskId,
+                        algoModelId);
                     return;
                 }
 
-                _logger.LogInformation("AlgoTaskWorker-{WorkerId} 已抢占任务，开始执行，TaskId: {TaskId}", workerId, taskId);
+                _logger.LogInformation(
+                    "AlgoTaskWorker-{WorkerId} claimed task, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                    workerId,
+                    taskId,
+                    algoModelId);
 
                 var executionResult = await appService.ExecuteCoreAsync(taskId);
 
                 if (await algoTaskRepository.TryMarkDoneAsync(taskId))
                 {
                     await appService.HandleExecutionSucceededAsync(taskId, executionResult);
-                    _logger.LogInformation("AlgoTaskWorker-{WorkerId} 任务执行成功，TaskId: {TaskId}", workerId, taskId);
+                    _logger.LogInformation(
+                        "AlgoTaskWorker-{WorkerId} completed task, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                        workerId,
+                        taskId,
+                        algoModelId);
                 }
                 else
                 {
-                    _logger.LogWarning("AlgoTaskWorker-{WorkerId} 任务已不处于 running，跳过完成状态覆盖，TaskId: {TaskId}", workerId, taskId);
+                    _logger.LogWarning(
+                        "AlgoTaskWorker-{WorkerId} skipped done update because task is no longer running, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                        workerId,
+                        taskId,
+                        algoModelId);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("AlgoTaskWorker-{WorkerId} 任务因停止信号中断，TaskId: {TaskId}", workerId, taskId);
+                _logger.LogInformation(
+                    "AlgoTaskWorker-{WorkerId} task interrupted by stop signal, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                    workerId,
+                    taskId,
+                    algoModelId);
             }
             catch (Exception ex)
             {
@@ -98,15 +126,29 @@ namespace SIFS.Infrastructure
                     }
                     else
                     {
-                        _logger.LogWarning("AlgoTaskWorker-{WorkerId} 任务已不处于 running，跳过失败状态覆盖，TaskId: {TaskId}", workerId, taskId);
+                        _logger.LogWarning(
+                            "AlgoTaskWorker-{WorkerId} skipped failed update because task is no longer running, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                            workerId,
+                            taskId,
+                            algoModelId);
                     }
                 }
                 catch (Exception failureHandlingError)
                 {
-                    _logger.LogError(failureHandlingError, "AlgoTaskWorker-{WorkerId} 处理任务失败状态时出错，TaskId: {TaskId}", workerId, taskId);
+                    _logger.LogError(
+                        failureHandlingError,
+                        "AlgoTaskWorker-{WorkerId} failed while handling task failure, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                        workerId,
+                        taskId,
+                        algoModelId);
                 }
 
-                _logger.LogError(ex, "AlgoTaskWorker-{WorkerId} 执行任务失败，TaskId: {TaskId}", workerId, taskId);
+                _logger.LogError(
+                    ex,
+                    "AlgoTaskWorker-{WorkerId} failed task execution, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                    workerId,
+                    taskId,
+                    algoModelId);
             }
         }
 
