@@ -1,41 +1,28 @@
-using SIFS.Application.AlgoModels;
-
 namespace SIFS.Infrastructure.External
 {
     public class AiService : IAiService
     {
         private readonly HttpClient _httpClient;
-        private readonly IAlgorithmEndpointResolver _algorithmEndpointResolver;
 
-        public AiService(HttpClient httpClient, IAlgorithmEndpointResolver algorithmEndpointResolver)
+        public AiService(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _algorithmEndpointResolver = algorithmEndpointResolver;
         }
 
-        public async Task<DetectionResult> DetectAsync(AiServiceType type, string imageUrl, int? level, string? apiUrl = null, Guid? userId = null)
+        public async Task<DetectionResult> DetectAsync(string imageUrl, int? level, string apiUrl, string? algorithmName = null, Guid? userId = null)
         {
-            var resolvedApiUrl = apiUrl;
-            if (string.IsNullOrWhiteSpace(resolvedApiUrl))
-            {
-                var resolveResult = await _algorithmEndpointResolver.ResolveAsync(type);
-                if (!resolveResult.IsSuccess)
-                    throw new InvalidOperationException(resolveResult.Message);
-
-                resolvedApiUrl = resolveResult.Data.ApiUrl;
-            }
-
-            if (string.IsNullOrWhiteSpace(resolvedApiUrl))
+            if (string.IsNullOrWhiteSpace(apiUrl))
                 throw new InvalidOperationException("algorithm API URL missing");
 
             var payload = new
             {
                 image_url = imageUrl,
                 level = level,
+                algorithm = algorithmName,
                 user_id = userId?.ToString("N")
             };
 
-            var response = await _httpClient.PostAsJsonAsync(resolvedApiUrl, payload);
+            var response = await _httpClient.PostAsJsonAsync(apiUrl.Trim(), payload);
 
             if (!response.IsSuccessStatusCode)
                 throw new HttpRequestException($"algorithm returned non-2xx response: {(int)response.StatusCode}");

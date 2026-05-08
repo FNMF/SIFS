@@ -8,8 +8,8 @@ export function createDetectionTaskApi(payload) {
     formData.append(`images[${index}].file`, item.file)
   })
 
-  payload.types.forEach((type, index) => {
-    formData.append(`types[${index}]`, type)
+  payload.algoModelIds.forEach((algoModelId, index) => {
+    formData.append(`algoModelIds[${index}]`, algoModelId)
   })
 
   if (payload.level !== null && payload.level !== undefined && payload.level !== '') {

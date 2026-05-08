@@ -12,20 +12,34 @@ namespace SIFS.Infrastructure.External
             _algoModelRepository = algoModelRepository;
         }
 
-        public async Task<Result<AlgorithmEndpointResolution>> ResolveAsync(AiServiceType type)
+        public async Task<Result<AlgorithmEndpointResolution>> ResolveByIdAsync(int algoModelId)
         {
-            var algoId = (int)type;
-            var algoName = type.ToString();
+            var model = await _algoModelRepository.FindByIdAsync(algoModelId);
+            return model == null
+                ? Result<AlgorithmEndpointResolution>.Fail(ResultCode.NotFound, $"ALGORITHM_NOT_FOUND: {algoModelId}")
+                : ValidateModel(model);
+        }
 
-            var modelById = await _algoModelRepository.FindByIdAsync(algoId);
-            if (modelById != null)
-                return ValidateModel(modelById);
+        public async Task<Result<AlgorithmEndpointResolution>> ResolveByNameAsync(string algoName)
+        {
+            if (string.IsNullOrWhiteSpace(algoName))
+                return Result<AlgorithmEndpointResolution>.Fail(ResultCode.InvalidInput, "ALGORITHM_NAME_EMPTY");
 
-            var modelByName = await _algoModelRepository.FindByNameAsync(algoName);
-            if (modelByName != null)
-                return ValidateModel(modelByName);
+            var model = await _algoModelRepository.FindByNameAsync(algoName.Trim());
+            return model == null
+                ? Result<AlgorithmEndpointResolution>.Fail(ResultCode.NotFound, $"ALGORITHM_NOT_FOUND: {algoName}")
+                : ValidateModel(model);
+        }
 
-            return Result<AlgorithmEndpointResolution>.Fail(ResultCode.NotFound, $"ALGORITHM_NOT_FOUND: {algoName}");
+        public async Task<Result<AlgorithmEndpointResolution>> ResolveAsync(int? algoModelId, string? algoName)
+        {
+            if (algoModelId.HasValue)
+                return await ResolveByIdAsync(algoModelId.Value);
+
+            if (!string.IsNullOrWhiteSpace(algoName))
+                return await ResolveByNameAsync(algoName);
+
+            return Result<AlgorithmEndpointResolution>.Fail(ResultCode.InvalidInput, "ALGORITHM_NOT_SPECIFIED");
         }
 
         private static Result<AlgorithmEndpointResolution> ValidateModel(Persistence.Models.AlgoModel model)

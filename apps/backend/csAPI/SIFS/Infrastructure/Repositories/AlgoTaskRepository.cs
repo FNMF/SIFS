@@ -56,24 +56,8 @@ namespace SIFS.Infrastructure.Repositories
             if (localFile == null)
                 throw new Exception($"AlgoTask {id} 没有对应的 Localfile");
 
-            // 取 TaskTypeMap
-            var taskTypeMap = await _context.TaskTypeMaps
-                .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.TaskId == id);
-
-            if (taskTypeMap == null)
-                throw new Exception($"AlgoTask {id} 没有对应的 TaskTypeMap");
-
-            // 取 AlgoType
-            var algoType = await _context.AlgoTypes
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == taskTypeMap.TypeId);
-
-            if (algoType == null)
-                throw new Exception($"TypeId {taskTypeMap.TypeId} 未找到对应的 AlgoType");
-
             // Map 聚合
-            var taskAggregate = MapToAggregate(entity, taskList, localFile, algoType);
+            var taskAggregate = MapToAggregate(entity, taskList, localFile);
 
             return Result<TaskItem>.Success(taskAggregate);
         }
@@ -97,21 +81,6 @@ namespace SIFS.Infrastructure.Repositories
             if (taskList == null)
                 throw new Exception("父任务不存在");
 
-            var taskTypeMaps = await _context.TaskTypeMaps
-                .AsNoTracking()
-                .Where(x => algoTaskIds.Contains(x.TaskId))
-                .ToListAsync();
-
-            var typeIds = taskTypeMaps
-                .Select(x => x.TypeId)
-                .Distinct()
-                .ToList();
-
-            var algoTypes = await _context.AlgoTypes
-                .AsNoTracking()
-                .Where(x => typeIds.Contains(x.Id))
-                .ToListAsync();
-
             // 这里从 Resultfiles 取结果图
             var resultFiles = await _context.ResultFiles
                 .AsNoTracking()
@@ -127,22 +96,9 @@ namespace SIFS.Infrastructure.Repositories
                         .FirstOrDefault() ?? string.Empty
                 );
 
-            var typeMapDict = taskTypeMaps
-                .GroupBy(x => x.TaskId)
-                .ToDictionary(x => x.Key, x => x.First().TypeId);
-
-            var typeDict = algoTypes.ToDictionary(x => x.Id, x => x.Name);
-
             return algoTasks.Select(x =>
             {
                 resultFileDict.TryGetValue(x.Id, out var url);
-                typeMapDict.TryGetValue(x.Id, out var typeId);
-
-                string typeName = string.Empty;
-                if (typeDict.TryGetValue(typeId, out var name))
-                {
-                    typeName = name;
-                }
 
                 return new AlgoReadDto
                 {
@@ -150,7 +106,7 @@ namespace SIFS.Infrastructure.Repositories
                     Url = string.IsNullOrWhiteSpace(url)
                             ? string.Empty
                             : _fileUrlBuilder.ToPythonUrl(url),
-                    Type = typeName,
+                    Type = x.AlgoName ?? string.Empty,
                     Status = x.Status,
                     Level = taskList.Level,
                     FailureReason = x.FailureReason,
@@ -185,19 +141,6 @@ namespace SIFS.Infrastructure.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.AlgoTaskId == algoTaskId);
 
-            // 注意：这里 task_type_map.task_id 存的是 algo_task.id
-            var taskTypeMap = await _context.TaskTypeMaps
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.TaskId == algoTaskId);
-
-            AlgoType? algoType = null;
-            if (taskTypeMap != null)
-            {
-                algoType = await _context.AlgoTypes
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id == taskTypeMap.TypeId);
-            }
-
             return new AlgoTaskDetailDto
             {
                 Guid = algoTask.Id,
@@ -209,7 +152,7 @@ namespace SIFS.Infrastructure.Repositories
                     ? string.Empty
                     : _fileUrlBuilder.ToPythonUrl(resultFile!.MaskLocalUrl!),
 
-                Type = algoType?.Name ?? string.Empty,
+                Type = algoTask.AlgoName ?? string.Empty,
                 Status = algoTask.Status,
                 StatusText = algoTask.Status.ToString(),
                 Level = taskList.Level,
@@ -247,21 +190,21 @@ namespace SIFS.Infrastructure.Repositories
         private TaskItem MapToAggregate(
             AlgoTask entity,
             TaskList taskList,
-            Localfile localFile,
-            AlgoType algoType)
+            Localfile localFile)
         {
-            // 枚举类型转换
-            var type = Enum.Parse<AiServiceType>(algoType.Name, true);
-
-            // 构建 TaskItem
-            var task = new TaskItem(entity.TaskId, localFile.UrlLocal, type, taskList.Level);
+            var task = new TaskItem(entity.TaskId, localFile.UrlLocal, new AlgorithmRef
+            {
+                AlgoModelId = entity.AlgoModelId,
+                AlgoName = entity.AlgoName ?? string.Empty,
+                AlgoApiUrl = entity.AlgoApiUrl ?? string.Empty
+            }, taskList.Level);
 
             // 回填基础字段
             typeof(TaskItem).GetProperty("Id")!.SetValue(task, entity.Id);
             typeof(TaskItem).GetProperty("CreatedAt")!.SetValue(task, entity.CreatedAt);
             typeof(TaskItem).GetProperty("UpdatedAt")!.SetValue(task, entity.UpdatedAt);
             typeof(TaskItem).GetProperty("AlgoModelId")!.SetValue(task, entity.AlgoModelId);
-            typeof(TaskItem).GetProperty("AlgoName")!.SetValue(task, entity.AlgoName ?? algoType.Name);
+            typeof(TaskItem).GetProperty("AlgoName")!.SetValue(task, entity.AlgoName);
             typeof(TaskItem).GetProperty("AlgoApiUrl")!.SetValue(task, entity.AlgoApiUrl);
             typeof(TaskItem).GetProperty("FailureReason")!.SetValue(task, entity.FailureReason);
             typeof(TaskItem).GetProperty("StartedAt")!.SetValue(task, entity.StartedAt);

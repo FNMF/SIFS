@@ -85,7 +85,7 @@ namespace SIFS.Application.AlgoTaskApp
                 var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
                 // 调用 AI
                 var result = await _aiService
-                    .DetectAsync(task.Type, accessibleUrl, task.Level, task.AlgoApiUrl, parentEntity.UserId);
+                    .DetectAsync(accessibleUrl, task.Level, task.AlgoApiUrl ?? string.Empty, task.AlgoName, parentEntity.UserId);
                 _logger.LogInformation("算法任务 {AlgoTaskId} 执行完成，结果: {IsFake},{Confidence},{Url}", algoTaskId, result.IsFake,result.Confidence,result.MaskUrl);
 
                 // 保存结果文件记录
@@ -93,7 +93,7 @@ namespace SIFS.Application.AlgoTaskApp
                 {
                     Id = UuidV7.NewUuidV7(),
                     AlgoTaskId = task.Id,
-                    AlgoType = (int)task.Type,
+                    AlgoType = task.AlgoModelId ?? 0,
                     IsFake = result.IsFake,
                     Confidence = result.Confidence,
                     MaskLocalUrl = result.MaskUrl,

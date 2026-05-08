@@ -73,7 +73,7 @@ async function handleSubmit() {
         order: index,
         file: item.raw
       })),
-      types: selectedTypes.value,
+      algoModelIds: selectedTypes.value,
       level: level.value
     }
 

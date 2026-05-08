@@ -116,27 +116,21 @@ namespace SIFS.Application.TaskManagement
             if (detail == null)
                 return Result<TaskOperationResultDto>.Fail(ResultCode.NotFound, "Task not found");
 
-            var typeIds = detail.SubTasks
-                .Select(x => x.AlgorithmTypeId)
-                .Where(x => x.HasValue)
-                .Select(x => x!.Value)
-                .Distinct()
+            var retryTargets = detail.SubTasks
+                .Where(x => x.AlgorithmId.HasValue || !string.IsNullOrWhiteSpace(x.AlgorithmName))
                 .ToList();
 
-            if (!typeIds.Any())
+            if (!retryTargets.Any())
                 return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, "Task has no algorithm info for retry");
 
-            var endpoints = new Dictionary<int, AlgorithmEndpointResolution>();
-            foreach (var typeId in typeIds)
+            var endpoints = new Dictionary<Guid, AlgorithmEndpointResolution>();
+            foreach (var subTask in retryTargets)
             {
-                if (!Enum.IsDefined(typeof(AiServiceType), typeId))
-                    return Result<TaskOperationResultDto>.Fail(ResultCode.InvalidInput, $"ALGORITHM_NOT_FOUND: {typeId}");
-
-                var resolveResult = await _algorithmEndpointResolver.ResolveAsync((AiServiceType)typeId);
+                var resolveResult = await _algorithmEndpointResolver.ResolveAsync(subTask.AlgorithmId, subTask.AlgorithmName);
                 if (!resolveResult.IsSuccess)
                     return Result<TaskOperationResultDto>.Fail(resolveResult.Code, resolveResult.Message);
 
-                endpoints[typeId] = resolveResult.Data;
+                endpoints[subTask.TaskId] = resolveResult.Data;
             }
 
             var retryResult = await _taskManagementRepository.RetryAsync(taskId, endpoints);

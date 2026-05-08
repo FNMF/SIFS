@@ -21,7 +21,6 @@ namespace SIFS.Application.DetectionTaskApp
         private readonly ITaskListRepository _taskListRepo;
         private readonly IAlgoTaskRepository _algoTaskRepo;
         private readonly ILocalfileRepository _fileRepo;
-        private readonly ITaskTypeMapRepository _taskTypeMapRepo;
         private readonly IAlgoTaskQueue _queue;
         private readonly IPermissionService _permissionService;
         private readonly IEventBus _eventBus;
@@ -35,7 +34,6 @@ namespace SIFS.Application.DetectionTaskApp
             ITaskListRepository taskListRepo,
             IAlgoTaskRepository algoTaskRepo,
             ILocalfileRepository fileRepo,
-            ITaskTypeMapRepository taskTypeMapRepo,
             IAlgoTaskQueue queue,
             IPermissionService permissionService,
             IEventBus eventBus,
@@ -48,7 +46,6 @@ namespace SIFS.Application.DetectionTaskApp
             _taskListRepo = taskListRepo;
             _algoTaskRepo = algoTaskRepo;
             _fileRepo = fileRepo;
-            _taskTypeMapRepo = taskTypeMapRepo;
             _queue = queue;
             _permissionService = permissionService;
             _eventBus = eventBus;
@@ -65,17 +62,22 @@ namespace SIFS.Application.DetectionTaskApp
                 // 基础校验
                 if (dto.Images == null || !dto.Images.Any())
                     throw new Exception("请至少上传一张图片");
-                if (dto.Types == null || !dto.Types.Any())
-                    throw new Exception("请至少选择一个检测类型");
+                var requestedAlgoModelIds = dto.AlgoModelIds
+                    .Where(x => x >= 0)
+                    .Distinct()
+                    .ToList();
 
-                var algorithmEndpoints = new Dictionary<AiServiceType, AlgorithmEndpointResolution>();
-                foreach (var type in dto.Types.Distinct())
+                if (!requestedAlgoModelIds.Any())
+                    throw new Exception("请至少选择一个算法");
+
+                var algorithmEndpoints = new Dictionary<int, AlgorithmEndpointResolution>();
+                foreach (var algoModelId in requestedAlgoModelIds)
                 {
-                    var resolveResult = await _algorithmEndpointResolver.ResolveAsync(type);
+                    var resolveResult = await _algorithmEndpointResolver.ResolveByIdAsync(algoModelId);
                     if (!resolveResult.IsSuccess)
                         return Result<Guid>.Fail(resolveResult.Code, resolveResult.Message);
 
-                    algorithmEndpoints[type] = resolveResult.Data;
+                    algorithmEndpoints[algoModelId] = resolveResult.Data;
                 }
 
                 // 排序校验（防重复）
@@ -99,7 +101,16 @@ namespace SIFS.Application.DetectionTaskApp
                 }
 
                 // 创建DetectionTask的Domain对象并持久化
-                var detectionTask = new DetectionTask(userId, urls, dto.Types, dto.Level);
+                var algorithms = algorithmEndpoints.Values
+                    .Select(x => new AlgorithmRef
+                    {
+                        AlgoModelId = x.AlgoModelId,
+                        AlgoName = x.AlgoName,
+                        AlgoApiUrl = x.ApiUrl
+                    })
+                    .ToList();
+
+                var detectionTask = new DetectionTask(userId, urls, algorithms, dto.Level);
 
                 await _taskListRepo.InsertAsync(detectionTask.ToEntity());
                 await _taskAuditService.RecordTransitionAsync(
@@ -112,12 +123,15 @@ namespace SIFS.Application.DetectionTaskApp
                 // 生成并持久化子任务
                 foreach (var file in fileResults)
                 {
-                    foreach (var type in dto.Types)
+                    foreach (var endpoint in algorithmEndpoints.Values)
                     {
                         // 创建 AlgoTask
-                        var taskItem = new TaskItem(detectionTask.Id, file.Url, type, dto.Level);
-                        var endpoint = algorithmEndpoints[type];
-                        taskItem.SetAlgorithmEndpoint(endpoint.AlgoModelId, endpoint.AlgoName, endpoint.ApiUrl);
+                        var taskItem = new TaskItem(detectionTask.Id, file.Url, new AlgorithmRef
+                        {
+                            AlgoModelId = endpoint.AlgoModelId,
+                            AlgoName = endpoint.AlgoName,
+                            AlgoApiUrl = endpoint.ApiUrl
+                        }, dto.Level);
                         var algoTask = taskItem.ToEntity();
 
                         await _algoTaskRepo.InsertAsync(algoTask);
@@ -134,16 +148,6 @@ namespace SIFS.Application.DetectionTaskApp
                         };
 
                         await _fileRepo.CreateLocalfileAsync(localFile);
-
-                        // TaskTypeMap
-                        var typeMap = new TaskTypeMap
-                        {
-                            Id = UuidV7.NewUuidV7(),
-                            TaskId = algoTask.Id,   // 这里是 AlgoTaskId
-                            TypeId = (int)type     // 枚举值和数据库一致
-                        };
-
-                        await _taskTypeMapRepo.InsertAsync(typeMap);
 
                         // 入队
                         await _queue.EnqueueAsync(algoTask.Id);
@@ -166,7 +170,7 @@ namespace SIFS.Application.DetectionTaskApp
                     Payload = new Dictionary<string, object?>
                     {
                         ["image_count"] = normalizedImages.Count,
-                        ["type_count"] = dto.Types.Count,
+                        ["algorithm_count"] = requestedAlgoModelIds.Count,
                         ["level"] = dto.Level
                     },
                     RequestContext = _requestContextFactory.Create("create detection task")

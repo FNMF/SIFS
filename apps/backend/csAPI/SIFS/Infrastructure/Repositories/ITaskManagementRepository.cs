@@ -11,6 +11,6 @@ namespace SIFS.Infrastructure.Repositories
         Task<bool> ExistsForUserAsync(Guid taskId, Guid userId);
         Task CancelAsync(Guid taskId, string reason);
         Task SoftDeleteAsync(Guid taskId, string reason);
-        Task<(Guid NewTaskId, List<Guid> AlgoTaskIds)> RetryAsync(Guid taskId, Dictionary<int, SIFS.Infrastructure.External.AlgorithmEndpointResolution> algorithmEndpoints);
+        Task<(Guid NewTaskId, List<Guid> AlgoTaskIds)> RetryAsync(Guid taskId, Dictionary<Guid, SIFS.Infrastructure.External.AlgorithmEndpointResolution> algorithmEndpoints);
     }
 }

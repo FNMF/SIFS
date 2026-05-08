@@ -120,11 +120,6 @@ namespace SIFS.Infrastructure.Repositories
                 .Where(x => algoTaskIds.Contains(x.AlgoTaskId))
                 .ToListAsync();
 
-            var taskTypeMaps = await _context.TaskTypeMaps
-                .AsNoTracking()
-                .Where(x => algoTaskIds.Contains(x.TaskId))
-                .ToListAsync();
-
             var originalPaths = localFiles
                 .Select(x => _fileUrlBuilder.ToAbsoluteUrl(x.UrlLocal))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -144,21 +139,15 @@ namespace SIFS.Infrastructure.Repositories
             var resultByTask = resultFiles
                 .GroupBy(x => x.AlgoTaskId)
                 .ToDictionary(x => x.Key, x => x.First());
-            var typeByTask = taskTypeMaps
-                .GroupBy(x => x.TaskId)
-                .ToDictionary(x => x.Key, x => x.First().TypeId);
-
             var subTasks = algoTasks.Select(x =>
             {
                 localByTask.TryGetValue(x.Id, out var localFile);
                 resultByTask.TryGetValue(x.Id, out var resultFile);
-                typeByTask.TryGetValue(x.Id, out var typeId);
 
                 return new TaskManagementSubTaskDto
                 {
                     TaskId = x.Id,
                     AlgorithmId = x.AlgoModelId,
-                    AlgorithmTypeId = typeId,
                     AlgorithmName = x.AlgoName,
                     Status = x.Status,
                     StatusText = GetStatusText(x.Status),
@@ -286,7 +275,7 @@ namespace SIFS.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<(Guid NewTaskId, List<Guid> AlgoTaskIds)> RetryAsync(Guid taskId, Dictionary<int, AlgorithmEndpointResolution> algorithmEndpoints)
+        public async Task<(Guid NewTaskId, List<Guid> AlgoTaskIds)> RetryAsync(Guid taskId, Dictionary<Guid, AlgorithmEndpointResolution> algorithmEndpoints)
         {
             var original = await _context.TaskLists.AsNoTracking().FirstAsync(x => x.Id == taskId);
             var originalAlgoTasks = await _context.AlgoTasks.AsNoTracking()
@@ -298,10 +287,6 @@ namespace SIFS.Infrastructure.Repositories
             var originalLocalFiles = await _context.Localfiles.AsNoTracking()
                 .Where(x => originalAlgoTaskIds.Contains(x.AlgoTaskId))
                 .ToListAsync();
-            var originalTypeMaps = await _context.TaskTypeMaps.AsNoTracking()
-                .Where(x => originalAlgoTaskIds.Contains(x.TaskId))
-                .ToListAsync();
-
             var now = DateTime.UtcNow;
             var newTaskId = UuidV7.NewUuidV7();
             var newAlgoTaskIds = new List<Guid>();
@@ -318,8 +303,7 @@ namespace SIFS.Infrastructure.Repositories
 
             foreach (var originalAlgoTask in originalAlgoTasks)
             {
-                var typeId = originalTypeMaps.FirstOrDefault(x => x.TaskId == originalAlgoTask.Id)?.TypeId;
-                if (!typeId.HasValue || !algorithmEndpoints.TryGetValue(typeId.Value, out var endpoint))
+                if (!algorithmEndpoints.TryGetValue(originalAlgoTask.Id, out var endpoint))
                     continue;
 
                 var newAlgoTaskId = UuidV7.NewUuidV7();
@@ -350,13 +334,6 @@ namespace SIFS.Infrastructure.Repositories
                         UpdatedAt = now
                     });
                 }
-
-                _context.TaskTypeMaps.Add(new TaskTypeMap
-                {
-                    Id = UuidV7.NewUuidV7(),
-                    TaskId = newAlgoTaskId,
-                    TypeId = typeId.Value
-                });
             }
 
             await _context.SaveChangesAsync();

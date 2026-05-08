@@ -1,12 +1,6 @@
 -- Baseline algorithm metadata.
 -- Safe to run repeatedly.
-
-INSERT INTO algo_type (id, name) VALUES
-(0, 'FLDCF'),
-(1, 'EdgeDetector'),
-(2, 'FrequencyAnalyzer')
-ON DUPLICATE KEY UPDATE
-    name = VALUES(name);
+-- Algorithm choices are driven by algo_models. The legacy algo_type table is not seeded.
 
 SET @OLD_SQL_MODE := @@SESSION.SQL_MODE;
 SET SESSION SQL_MODE = CONCAT_WS(',', @@SESSION.SQL_MODE, 'NO_AUTO_VALUE_ON_ZERO');

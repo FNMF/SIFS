@@ -54,27 +54,10 @@ namespace SIFS.Infrastructure.Repositories
                 .Where(f => algoTaskIds.Contains(f.AlgoTaskId))
                 .ToListAsync();
 
-            // 查 TaskTypeMap（所有子任务）
-            var taskTypeMaps = await _context.TaskTypeMaps
-                .AsNoTracking()
-                .Where(m => algoTaskIds.Contains(m.TaskId))
-                .ToListAsync();
-
-            var typeIds = taskTypeMaps.Select(x => x.TypeId).Distinct().ToList();
-
-            // 查 AlgoType
-            var algoTypes = await _context.AlgoTypes
-                .AsNoTracking()
-                .Where(t => typeIds.Contains(t.Id))
-                .ToListAsync();
-
-            // 5️⃣ 组装 Aggregate
             var detectionTask = MapToAggregate(
                 taskList,
                 algoTasks,
-                localFiles,
-                taskTypeMaps,
-                algoTypes);
+                localFiles);
 
             return Result<DetectionTask>.Success(detectionTask);
         }
@@ -215,9 +198,7 @@ namespace SIFS.Infrastructure.Repositories
         private DetectionTask MapToAggregate(
             TaskList taskList,
             List<AlgoTask> algoTasks,
-            List<Localfile> localFiles,
-            List<TaskTypeMap> taskTypeMaps,
-            List<AlgoType> algoTypes)
+            List<Localfile> localFiles)
         {
             //  URL（按顺序）
             var urls = localFiles
@@ -225,28 +206,19 @@ namespace SIFS.Infrastructure.Repositories
                 .Select(f => f.UrlLocal)
                 .ToList();
 
-            // 构建 TypeId → AiServiceType 映射
-            var typeDict = algoTypes.ToDictionary(
-                t => t.Id,
-                t => Enum.Parse<AiServiceType>(t.Name, true) // name 和 enum 一致
-            );
-
-            // 每个 AlgoTask 对应的 Types
-            var algoTaskTypesDict = taskTypeMaps
-                .GroupBy(m => m.TaskId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Select(m => typeDict[m.TypeId]).ToList()
-                );
-
-            // DetectionTask 的 Types（可以取 union 或第一个）
-            var detectionTypes = algoTaskTypesDict.Values
-                .SelectMany(x => x)
-                .Distinct()
+            var algorithms = algoTasks
+                .Where(x => x.DeletedAt == null)
+                .Select(x => new AlgorithmRef
+                {
+                    AlgoModelId = x.AlgoModelId,
+                    AlgoName = x.AlgoName ?? string.Empty,
+                    AlgoApiUrl = x.AlgoApiUrl ?? string.Empty
+                })
+                .GroupBy(x => x.AlgoModelId?.ToString() ?? x.AlgoName)
+                .Select(x => x.First())
                 .ToList();
 
-            // 创建 DetectionTask
-            var detectionTask = new DetectionTask(taskList.UserId, urls, detectionTypes, taskList.Level);
+            var detectionTask = new DetectionTask(taskList.UserId, urls, algorithms, taskList.Level);
 
             // 回填基础字段（重要）
             typeof(DetectionTask).GetProperty("Id")!

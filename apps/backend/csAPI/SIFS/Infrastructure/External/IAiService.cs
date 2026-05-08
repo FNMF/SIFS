@@ -1,7 +1,7 @@
-﻿namespace SIFS.Infrastructure.External
+namespace SIFS.Infrastructure.External
 {
     public interface IAiService
     {
-        Task<DetectionResult> DetectAsync(AiServiceType type, string imagePath, int? level, string? apiUrl = null, Guid? userId = null);
+        Task<DetectionResult> DetectAsync(string imagePath, int? level, string apiUrl, string? algorithmName = null, Guid? userId = null);
     }
 }

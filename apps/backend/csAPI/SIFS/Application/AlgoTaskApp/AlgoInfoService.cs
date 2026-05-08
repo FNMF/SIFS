@@ -1,19 +1,28 @@
-﻿using SIFS.Infrastructure.Persistence.Models;
+using SIFS.Application.AlgoModels;
 using SIFS.Infrastructure.Repositories;
 using SIFS.Shared.Results;
 
 namespace SIFS.Application.AlgoTaskApp
 {
-    public class AlgoInfoService: IAlgoInfoService
+    public class AlgoInfoService : IAlgoInfoService
     {
-        private readonly IAlgoTypeRepository _algoTypeRepository;
-        public AlgoInfoService(IAlgoTypeRepository algoTypeRepository)
+        private readonly IAlgoModelRepository _algoModelRepository;
+
+        public AlgoInfoService(IAlgoModelRepository algoModelRepository)
         {
-            _algoTypeRepository = algoTypeRepository;
+            _algoModelRepository = algoModelRepository;
         }
-        public async Task<Result<List<AlgoType>>> GetAllAsync()
+
+        public async Task<Result<List<AlgoModelDto>>> GetAllAsync()
         {
-            return await _algoTypeRepository.GetAllAsync();
+            var page = await _algoModelRepository.ListAsync(new AlgoModelQuery
+            {
+                Enabled = true,
+                Page = 1,
+                PageSize = 100
+            });
+
+            return Result<List<AlgoModelDto>>.Success(page.Data);
         }
     }
 }

@@ -1,4 +1,3 @@
-﻿using SIFS.Infrastructure.External;
 using SIFS.Infrastructure.Persistence.Models;
 using SIFS.Shared.Helpers;
 
@@ -7,24 +6,25 @@ namespace SIFS.Domain.Entities
     public class DetectionTask
     {
         public Guid Id { get; private set; } = UuidV7.NewUuidV7();
-        public Guid UserId {  get; private set; }
-        public int Status { get; private set; } = 0;        // 复合任务，值对应完成的子任务数量，初始为0，完成时为Urls.Count
-        public bool IsCompleted => Status == Urls.Count*Types.Count;
-        public List<string> Urls { get; private set; } = new();   // 复合任务，包含多个URL   
+        public Guid UserId { get; private set; }
+        public int Status { get; private set; } = 0;
+        public bool IsCompleted => Status == Urls.Count * Algorithms.Count;
+        public List<string> Urls { get; private set; } = new();
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
-        public List<AiServiceType> Types { get; private set; }
+        public List<AlgorithmRef> Algorithms { get; private set; }
         public int? Level { get; private set; }
 
-        public DetectionTask(Guid userid, List<string> urls, List<AiServiceType> types, int? level)
+        public DetectionTask(Guid userid, List<string> urls, List<AlgorithmRef> algorithms, int? level)
         {
-            UserId = userid;                                                                                                                                                                 
+            UserId = userid;
             Urls = urls;
-            Types = types;
+            Algorithms = algorithms;
             Level = level;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
         }
+
         public TaskList ToEntity()
         {
             return new TaskList
@@ -37,10 +37,12 @@ namespace SIFS.Domain.Entities
                 Level = Level
             };
         }
+
         public List<TaskItem> GenerateAlgoTasks()
         {
-            return Urls.SelectMany(url => Types.Select(type => new TaskItem(Id, url, type, Level))).ToList();
+            return Urls.SelectMany(url => Algorithms.Select(algorithm => new TaskItem(Id, url, algorithm, Level))).ToList();
         }
+
         public bool OnAlgoTaskCompleted()
         {
             Status++;
@@ -48,5 +50,10 @@ namespace SIFS.Domain.Entities
         }
     }
 
-    
+    public class AlgorithmRef
+    {
+        public int? AlgoModelId { get; set; }
+        public string AlgoName { get; set; } = string.Empty;
+        public string AlgoApiUrl { get; set; } = string.Empty;
+    }
 }
