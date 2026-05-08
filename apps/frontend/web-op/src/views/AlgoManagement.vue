@@ -60,7 +60,7 @@
       />
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑算法' : '新增算法'" width="620px">
+    <el-dialog v-model="dialogVisible" :title="isEditing ? '编辑算法' : '新增算法'" width="620px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" />
@@ -112,6 +112,7 @@ const rules = {
 }
 
 const healthMap = computed(() => Object.fromEntries(healthItems.value.map((item) => [item.algo_model_id, item])))
+const isEditing = computed(() => editingId.value !== null && editingId.value !== undefined)
 
 async function loadData() {
   loading.value = true
@@ -129,8 +130,12 @@ async function loadData() {
     ])
     items.value = (algoData.items || []).map((item) => ({
       ...item,
-      apiUrl: item.apiUrl || item.api_url,
-      reservedJson: item.reservedJson || item.reserved_json
+      id: item.id ?? item.Id,
+      name: item.name ?? item.Name,
+      enabled: item.enabled ?? item.Enabled,
+      apiUrl: item.apiUrl || item.api_url || item.ApiUrl,
+      description: item.description ?? item.Description,
+      reservedJson: item.reservedJson || item.reserved_json || item.ReservedJson
     }))
     total.value = algoData.total || 0
     healthItems.value = healthData.items || []
@@ -178,7 +183,7 @@ async function saveAlgo() {
       reserved_json: reservedJson,
       ReservedJson: reservedJson
     }
-    if (editingId.value) {
+    if (isEditing.value) {
       await algoApi.update(editingId.value, payload)
       ElMessage.success('算法已更新')
     } else {
