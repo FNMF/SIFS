@@ -46,138 +46,145 @@ namespace SIFS.Application.AlgoTaskApp
 
         public async Task ExecuteAsync(Guid algoTaskId)
         {
-            // 获取完整聚合
-            var taskResult = await _algoTaskRepo.GetAggregateByGuidAsync(algoTaskId);
-            if (!taskResult.IsSuccess)
+            if (!await _algoTaskRepo.TryMarkRunningAsync(algoTaskId))
             {
-                // 记录日志
-                return;
-            }
-            var task = taskResult.Data;
-            if (task.Status != SIFS.Domain.Enum.AlgoTaskStatus.pending)
-            {
-                _logger.LogInformation("算法任务 {AlgoTaskId} 当前状态为 {Status}，跳过执行", algoTaskId, task.Status);
+                _logger.LogInformation("算法任务 {AlgoTaskId} 未抢占成功，跳过执行", algoTaskId);
                 return;
             }
 
             try
             {
-                _logger.LogInformation("开始执行算法任务 {AlgoTaskId}", algoTaskId);
-                // 标记运行中
-                var fromStatus = task.Status.ToString();
-                task.MarkAsRunning();
-                await _algoTaskRepo.UpdateAsync(task.ToEntity());
-                await _taskAuditService.RecordTransitionAsync(
-                    task.TaskId,
-                    fromStatus,
-                    "processing",
-                    "worker started task",
-                    null,
-                    new { algo_task_id = task.Id, algorithm = task.AlgoName });
-
-                var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
-                if (!parentEntityResult.IsSuccess)
-                    throw new InvalidOperationException("parent task missing");
-
-                var parentEntity = parentEntityResult.Data;
-
-                // URL 转换（本地路径 -> 可访问 URL）
-                var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
-                // 调用 AI
-                var result = await _aiService
-                    .DetectAsync(accessibleUrl, task.Level, task.AlgoApiUrl ?? string.Empty, task.AlgoName, parentEntity.UserId);
-                _logger.LogInformation("算法任务 {AlgoTaskId} 执行完成，结果: {IsFake},{Confidence},{Url}", algoTaskId, result.IsFake,result.Confidence,result.MaskUrl);
-
-                // 保存结果文件记录
-                var resultFile = new ResultFile
-                {
-                    Id = UuidV7.NewUuidV7(),
-                    AlgoTaskId = task.Id,
-                    IsFake = result.IsFake,
-                    Confidence = result.Confidence,
-                    MaskLocalUrl = result.MaskUrl,
-                };
-                
-                await _resultFileRepository.InsertAsync(resultFile);
-                _logger.LogInformation("保存算法任务 {AlgoTaskId} 的结果文件记录，MaskLocalUrl: {MaskLocalUrl}", algoTaskId, result.MaskUrl);
-
-                // 标记完成
-                fromStatus = task.Status.ToString();
-                task.MarkAsDone(result);
-                await _algoTaskRepo.UpdateAsync(task.ToEntity());
-                await _taskAuditService.RecordTransitionAsync(
-                    task.TaskId,
-                    fromStatus,
-                    "success",
-                    "worker completed task",
-                    null,
-                    new { algo_task_id = task.Id, algorithm = task.AlgoName });
-
-                // 更新父任务
-                parentEntity.Status += 1;
-                parentEntity.UpdatedAt = DateTime.UtcNow;
-
-                await _taskListRepo.UpdateAsync(parentEntity);
-
-                // 判断是否完成（推荐直接查）
-                var detectionTaskResult = await _taskListRepo.GetDetectionTaskAggregateByGuidAsync(task.TaskId);
-                var detectionTask = detectionTaskResult.Data;
-
-
-                if (detectionTask.IsCompleted)
-                {
-                    // SignalR
-                    // await _hub.NotifyCompleted(task.TaskId);
-                }
-
-                await _taskNotificationService.NotifyAlgoTaskFinishedAsync(new TaskFinishedNotification
-                {
-                    UserId = parentEntity.UserId,
-                    TaskId = task.TaskId,
-                    AlgoTaskId = task.Id,
-                    Status = "done",
-                    StatusText = "已完成",
-                    Algorithm = task.AlgoName,
-                    ResultUrl = result.MaskUrl,
-                    ParentTaskCompleted = detectionTask.IsCompleted,
-                    FinishedAt = DateTime.UtcNow
-                });
+                var executionResult = await ExecuteCoreAsync(algoTaskId);
+                if (await _algoTaskRepo.TryMarkDoneAsync(algoTaskId))
+                    await HandleExecutionSucceededAsync(algoTaskId, executionResult);
             }
             catch (Exception ex)
             {
-                // 失败处理
-                var fromStatus = task.Status.ToString();
-                task.MarkAsFailed(ToSafeFailureReason(ex));
-                await _algoTaskRepo.UpdateAsync(task.ToEntity());
-                await _taskAuditService.RecordTransitionAsync(
-                    task.TaskId,
-                    fromStatus,
-                    "failed",
-                    task.FailureReason,
-                    null,
-                    new { algo_task_id = task.Id, algorithm = task.AlgoName });
+                var failureReason = ToSafeFailureReason(ex);
+                if (await _algoTaskRepo.TryMarkFailedAsync(algoTaskId, failureReason))
+                    await HandleExecutionFailedAsync(algoTaskId, failureReason);
 
-                var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
-                if (parentEntityResult.IsSuccess)
-                {
-                    await _taskNotificationService.NotifyAlgoTaskFinishedAsync(new TaskFinishedNotification
-                    {
-                        UserId = parentEntityResult.Data.UserId,
-                        TaskId = task.TaskId,
-                        AlgoTaskId = task.Id,
-                        Status = "failed",
-                        StatusText = "失败",
-                        Algorithm = task.AlgoName,
-                        FailureReason = task.FailureReason,
-                        ParentTaskCompleted = false,
-                        FinishedAt = DateTime.UtcNow
-                    });
-                }
-
-                // TODO: 日志 / 重试
                 _logger.LogError(ex, "执行算法任务 {AlgoTaskId} 失败", algoTaskId);
             }
         }
+
+        public async Task<AlgoTaskExecutionResult> ExecuteCoreAsync(Guid algoTaskId)
+        {
+            var taskResult = await _algoTaskRepo.GetAggregateByGuidAsync(algoTaskId);
+            if (!taskResult.IsSuccess)
+                throw new InvalidOperationException(taskResult.Message);
+
+            var task = taskResult.Data;
+
+            if (task.Status != SIFS.Domain.Enum.AlgoTaskStatus.running)
+                throw new InvalidOperationException($"task is not running: {task.Status}");
+
+            _logger.LogInformation("开始执行算法任务 {AlgoTaskId}", algoTaskId);
+            await _taskAuditService.RecordTransitionAsync(
+                task.TaskId,
+                "pending",
+                "processing",
+                "worker started task",
+                null,
+                new { algo_task_id = task.Id, algorithm = task.AlgoName });
+
+            var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
+            if (!parentEntityResult.IsSuccess)
+                throw new InvalidOperationException("parent task missing");
+
+            var parentEntity = parentEntityResult.Data;
+            var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
+            var result = await _aiService
+                .DetectAsync(accessibleUrl, task.Level, task.AlgoApiUrl ?? string.Empty, task.AlgoName, parentEntity.UserId);
+
+            _logger.LogInformation("算法任务 {AlgoTaskId} 执行完成，结果: {IsFake},{Confidence},{Url}", algoTaskId, result.IsFake, result.Confidence, result.MaskUrl);
+
+            if (!await _algoTaskRepo.IsRunningAsync(algoTaskId))
+                throw new InvalidOperationException("task is no longer running");
+
+            var resultFile = new ResultFile
+            {
+                Id = UuidV7.NewUuidV7(),
+                AlgoTaskId = task.Id,
+                IsFake = result.IsFake,
+                Confidence = result.Confidence,
+                MaskLocalUrl = result.MaskUrl,
+            };
+
+            await _resultFileRepository.InsertAsync(resultFile);
+            _logger.LogInformation("保存算法任务 {AlgoTaskId} 的结果文件记录，MaskLocalUrl: {MaskLocalUrl}", algoTaskId, result.MaskUrl);
+
+            return new AlgoTaskExecutionResult
+            {
+                TaskId = task.TaskId,
+                AlgoTaskId = task.Id,
+                UserId = parentEntity.UserId,
+                Algorithm = task.AlgoName,
+                ResultUrl = result.MaskUrl
+            };
+        }
+
+        public async Task HandleExecutionSucceededAsync(Guid algoTaskId, AlgoTaskExecutionResult executionResult)
+        {
+            await _taskAuditService.RecordTransitionAsync(
+                executionResult.TaskId,
+                "processing",
+                "success",
+                "worker completed task",
+                null,
+                new { algo_task_id = algoTaskId, algorithm = executionResult.Algorithm });
+
+            var progress = await _taskListRepo.RefreshProgressFromSubTasksAsync(executionResult.TaskId);
+
+            await _taskNotificationService.NotifyAlgoTaskFinishedAsync(new TaskFinishedNotification
+            {
+                UserId = executionResult.UserId,
+                TaskId = executionResult.TaskId,
+                AlgoTaskId = executionResult.AlgoTaskId,
+                Status = "done",
+                StatusText = "已完成",
+                Algorithm = executionResult.Algorithm,
+                ResultUrl = executionResult.ResultUrl,
+                ParentTaskCompleted = progress.IsCompleted,
+                FinishedAt = DateTime.UtcNow
+            });
+        }
+
+        public async Task HandleExecutionFailedAsync(Guid algoTaskId, string failureReason)
+        {
+            var taskResult = await _algoTaskRepo.GetAggregateByGuidAsync(algoTaskId);
+            if (!taskResult.IsSuccess)
+                return;
+
+            var task = taskResult.Data;
+            await _taskAuditService.RecordTransitionAsync(
+                task.TaskId,
+                "processing",
+                "failed",
+                failureReason,
+                null,
+                new { algo_task_id = task.Id, algorithm = task.AlgoName });
+
+            await _taskListRepo.RefreshProgressFromSubTasksAsync(task.TaskId);
+
+            var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
+            if (parentEntityResult.IsSuccess)
+            {
+                await _taskNotificationService.NotifyAlgoTaskFinishedAsync(new TaskFinishedNotification
+                {
+                    UserId = parentEntityResult.Data.UserId,
+                    TaskId = task.TaskId,
+                    AlgoTaskId = task.Id,
+                    Status = "failed",
+                    StatusText = "失败",
+                    Algorithm = task.AlgoName,
+                    FailureReason = failureReason,
+                    ParentTaskCompleted = false,
+                    FinishedAt = DateTime.UtcNow
+                });
+            }
+        }
+
         public async Task<Result<AlgoTaskDetailDto>> GetDetailAsync(Guid algoTaskId, Guid userId)
         {
             try

@@ -12,6 +12,7 @@ namespace SIFS.Infrastructure.Repositories
         Task<List<DetectionTaskReadDto>> GetAllReadDtosAsync();
         Task<List<DetectionTaskReadDto>> GetAllReadDtosByUserIdAsync(Guid userId);
         Task<List<string>> GetImageUrlsByTaskIdAsync(Guid taskId);
+        Task<(int CompletedCount, int TotalCount, bool IsCompleted)> RefreshProgressFromSubTasksAsync(Guid taskId);
         Task InsertAsync(TaskList taskList);
         Task UpdateAsync(TaskList taskList);
     }

@@ -1,4 +1,4 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
 
 namespace SIFS.Infrastructure
 {
@@ -6,12 +6,14 @@ namespace SIFS.Infrastructure
     {
         private readonly Channel<Guid> _channel;
 
-        public AlgoTaskQueue()
+        public AlgoTaskQueue(IConfiguration configuration)
         {
-            _channel = Channel.CreateBounded<Guid>(
-                new BoundedChannelOptions(1000)     // 1000容量防止OOM
+            var capacity = Math.Max(configuration.GetValue("AlgoTaskWorker:QueueCapacity", 1000), 1);
+            _channel = Channel.CreateBounded<Guid>(new BoundedChannelOptions(capacity)
             {
-                FullMode = BoundedChannelFullMode.Wait
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = false,
+                SingleWriter = false
             });
         }
 

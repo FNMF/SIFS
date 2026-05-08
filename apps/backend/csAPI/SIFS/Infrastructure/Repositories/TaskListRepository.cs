@@ -174,6 +174,28 @@ namespace SIFS.Infrastructure.Repositories
                 .Distinct()
                 .ToList();
         }
+
+        public async Task<(int CompletedCount, int TotalCount, bool IsCompleted)> RefreshProgressFromSubTasksAsync(Guid taskId)
+        {
+            var algoTasks = await _context.AlgoTasks
+                .AsNoTracking()
+                .Where(x => x.TaskId == taskId && x.DeletedAt == null)
+                .Select(x => x.Status)
+                .ToListAsync();
+
+            var totalCount = algoTasks.Count;
+            var completedCount = algoTasks.Count(x => x == (int)AlgoTaskStatus.done);
+            var now = DateTime.UtcNow;
+
+            await _context.TaskLists
+                .Where(x => x.Id == taskId && x.DeletedAt == null)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Status, completedCount)
+                    .SetProperty(x => x.UpdatedAt, now));
+
+            return (completedCount, totalCount, totalCount > 0 && completedCount == totalCount);
+        }
+
         public async Task InsertAsync(TaskList taskList)
         {
             await _context.TaskLists.AddAsync(taskList);

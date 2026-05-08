@@ -40,6 +40,8 @@ $env:MYSQL_ROOT_PASSWORD="replace-me"
 $env:JWT_SECRET_KEY="replace-with-a-long-secret"
 $env:PUBLIC_BASE_URL="https://your-domain.example"
 $env:HTTP_PORT="80"
+$env:ALGO_TASK_WORKER_COUNT="2"
+$env:ALGO_TASK_QUEUE_CAPACITY="1000"
 ```
 
 If the host does not have NVIDIA Container Toolkit installed, remove `gpus: all` from `fldcf-api` and `fecdnet-api`.

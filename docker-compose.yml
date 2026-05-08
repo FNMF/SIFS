@@ -36,6 +36,8 @@ services:
       Jwt__ExpiresMinutes: 25
       AppUrlOptions__BaseUrl: ${PUBLIC_BASE_URL:-http://localhost}
       AppUrlOptions__PyBaseUrl: ${PUBLIC_BASE_URL:-http://localhost}
+      AlgoTaskWorker__WorkerCount: ${ALGO_TASK_WORKER_COUNT:-2}
+      AlgoTaskWorker__QueueCapacity: ${ALGO_TASK_QUEUE_CAPACITY:-1000}
       TZ: Asia/Shanghai
     depends_on:
       mysql:
