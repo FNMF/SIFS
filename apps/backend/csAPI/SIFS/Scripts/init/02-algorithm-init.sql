@@ -8,7 +8,8 @@ SET SESSION SQL_MODE = CONCAT_WS(',', @@SESSION.SQL_MODE, 'NO_AUTO_VALUE_ON_ZERO
 INSERT INTO algo_models
     (id, name, enabled, api_url, description, reserved_json, created_at, updated_at, deleted_at)
 VALUES
-    (0, 'FLDCF', TRUE, 'http://127.0.0.1:8000/detect/fldcf', 'Default FLDCF algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP(), NULL)
+    (0, 'FLDCF', TRUE, 'http://127.0.0.1:8000/detect/fldcf', 'Default FLDCF algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP(), NULL),
+    (1, 'FECDNet', TRUE, 'http://127.0.0.1:8001/detect/fecdnet', 'Default FECDNet algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP(), NULL)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     enabled = VALUES(enabled),
