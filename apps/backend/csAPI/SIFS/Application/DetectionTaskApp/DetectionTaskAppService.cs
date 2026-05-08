@@ -93,7 +93,7 @@ namespace SIFS.Application.DetectionTaskApp
                 var fileResults = new List<(string Url, int Order)>();
                 foreach (var img in normalizedImages)
                 {
-                    var url = await _localfileService.LocalSaveAsync(img.File);
+                    var url = await _localfileService.LocalSaveAsync(img.File, userId);
                     urls.Add(url);
                     fileResults.Add((url, img.Order));
                 }

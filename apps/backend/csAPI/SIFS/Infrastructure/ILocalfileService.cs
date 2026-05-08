@@ -2,6 +2,6 @@
 {
     public interface ILocalfileService
     {
-        Task<string> LocalSaveAsync(IFormFile file);
+        Task<string> LocalSaveAsync(IFormFile file, Guid userId);
     }
 }

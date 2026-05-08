@@ -194,6 +194,21 @@ namespace SIFS
             app.UseAuthentication();
             app.UseAuthorization();
 
+            var appDataPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", "data"));
+            Directory.CreateDirectory(appDataPath);
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(appDataPath),
+                RequestPath = "/data",
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:5173");
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization");
+                }
+            });
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(

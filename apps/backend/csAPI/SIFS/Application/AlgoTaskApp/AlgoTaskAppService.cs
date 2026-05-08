@@ -75,11 +75,17 @@ namespace SIFS.Application.AlgoTaskApp
                     null,
                     new { algo_task_id = task.Id, algorithm = task.AlgoName });
 
+                var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
+                if (!parentEntityResult.IsSuccess)
+                    throw new InvalidOperationException("parent task missing");
+
+                var parentEntity = parentEntityResult.Data;
+
                 // URL 转换（本地路径 -> 可访问 URL）
                 var accessibleUrl = _urlBuilder.ToAbsoluteUrl(task.Url);
                 // 调用 AI
                 var result = await _aiService
-                    .DetectAsync(task.Type, accessibleUrl, task.Level, task.AlgoApiUrl);
+                    .DetectAsync(task.Type, accessibleUrl, task.Level, task.AlgoApiUrl, parentEntity.UserId);
                 _logger.LogInformation("算法任务 {AlgoTaskId} 执行完成，结果: {IsFake},{Confidence},{Url}", algoTaskId, result.IsFake,result.Confidence,result.MaskUrl);
 
                 // 保存结果文件记录
@@ -109,9 +115,6 @@ namespace SIFS.Application.AlgoTaskApp
                     new { algo_task_id = task.Id, algorithm = task.AlgoName });
 
                 // 更新父任务
-                var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
-
-                var parentEntity = parentEntityResult.Data;
                 parentEntity.Status += 1;
                 parentEntity.UpdatedAt = DateTime.UtcNow;
 

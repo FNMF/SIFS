@@ -11,9 +11,11 @@ namespace SIFS.Infrastructure
         {
             _env = env;
         }
-        public async Task<string> LocalSaveAsync(IFormFile file)
+        public async Task<string> LocalSaveAsync(IFormFile file, Guid userId)
         {
-            var folder = Path.Combine(_env.ContentRootPath, "Files");
+            var dataRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "..", "..", "data"));
+            var userFolderName = userId.ToString("N");
+            var folder = Path.Combine(dataRoot, "user_input", userFolderName);
 
             if (!Directory.Exists(folder))
             {
@@ -26,7 +28,7 @@ namespace SIFS.Infrastructure
             using var stream = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(stream);
 
-            return "/Files/" + fileName;
+            return $"/data/user_input/{userFolderName}/{fileName}";
         }
     }
 }

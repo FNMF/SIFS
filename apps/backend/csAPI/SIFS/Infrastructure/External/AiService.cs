@@ -13,7 +13,7 @@ namespace SIFS.Infrastructure.External
             _algorithmEndpointResolver = algorithmEndpointResolver;
         }
 
-        public async Task<DetectionResult> DetectAsync(AiServiceType type, string imageUrl, int? level, string? apiUrl = null)
+        public async Task<DetectionResult> DetectAsync(AiServiceType type, string imageUrl, int? level, string? apiUrl = null, Guid? userId = null)
         {
             var resolvedApiUrl = apiUrl;
             if (string.IsNullOrWhiteSpace(resolvedApiUrl))
@@ -31,7 +31,8 @@ namespace SIFS.Infrastructure.External
             var payload = new
             {
                 image_url = imageUrl,
-                level = level
+                level = level,
+                user_id = userId?.ToString("N")
             };
 
             var response = await _httpClient.PostAsJsonAsync(resolvedApiUrl, payload);

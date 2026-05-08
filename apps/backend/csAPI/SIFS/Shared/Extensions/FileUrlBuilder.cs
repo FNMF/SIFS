@@ -18,6 +18,12 @@ namespace SIFS.Shared.Extensions
 
         public string ToPythonUrl(string relativePath)
         {
+            if (!string.IsNullOrWhiteSpace(relativePath) &&
+                relativePath.StartsWith("/data/", StringComparison.OrdinalIgnoreCase))
+            {
+                return ToAbsoluteUrl(relativePath);
+            }
+
             return BuildUrl(_options.PyBaseUrl, relativePath, "PyBaseUrl");
         }
 
