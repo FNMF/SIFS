@@ -18,6 +18,14 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      '/api': 'http://localhost:5021',
+      '/data': 'http://localhost:5021',
+      '/task-notifications': {
+        target: 'http://localhost:5021',
+        ws: true
+      }
+    }
   },
 })

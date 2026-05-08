@@ -50,7 +50,7 @@ namespace SIFS.Application.ModelHealthChecks
                 {
                     using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
                     var client = _httpClientFactory.CreateClient();
-                    using var response = await client.GetAsync(uri, timeout.Token);
+                    using var response = await client.GetAsync(BuildHealthCheckUri(uri), timeout.Token);
                     stopwatch.Stop();
                     responseTimeMs = (int)Math.Min(stopwatch.ElapsedMilliseconds, int.MaxValue);
 
@@ -101,6 +101,28 @@ namespace SIFS.Application.ModelHealthChecks
             {
                 _logger.LogError(ex, "Persisting algorithm health check failed. AlgoId={AlgoId}", algoModel.Id);
             }
+        }
+
+        private static Uri BuildHealthCheckUri(Uri apiUri)
+        {
+            var path = apiUri.AbsolutePath.TrimEnd('/');
+            const string detectPrefix = "/detect/";
+
+            if (path.StartsWith(detectPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var algorithm = path[detectPrefix.Length..];
+                if (!string.IsNullOrWhiteSpace(algorithm))
+                {
+                    var builder = new UriBuilder(apiUri)
+                    {
+                        Path = $"/health/{algorithm}",
+                        Query = string.Empty
+                    };
+                    return builder.Uri;
+                }
+            }
+
+            return apiUri;
         }
 
         public async Task CheckEnabledAlgosHealthAsync()
