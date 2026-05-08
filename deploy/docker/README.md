@@ -21,8 +21,8 @@ Do not include `99-dev-test-users.sql` in production deployments.
 
 ## Services
 
-- `nginx`: public reverse proxy and backend load balancer.
-- `backend-1`, `backend-2`: two SIFS backend workers.
+- `nginx`: public reverse proxy.
+- `backend`: single SIFS backend process. It runs the API plus the in-process background workers, avoiding duplicate in-memory queues, recovery scans, and health checks before an external message queue is introduced.
 - `web`: user frontend static container.
 - `web-op`: admin frontend static container.
 - `mysql`: MySQL 8 database.
