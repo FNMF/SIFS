@@ -1,4 +1,5 @@
 using SIFS.Application.AlgoTaskApp;
+using SIFS.Application.TaskAudits;
 using SIFS.Infrastructure;
 using SIFS.Infrastructure.Repositories;
 
@@ -11,6 +12,7 @@ namespace SIFS.Application.Scheduling
         private readonly IAlgoRuntimeConfigResolver _runtimeConfigResolver;
         private readonly IAlgoTaskLimiterRegistryService _limiterRegistry;
         private readonly IAlgoTaskAppService _algoTaskAppService;
+        private readonly ITaskAuditService _taskAuditService;
         private readonly ILogger<AlgoTaskSchedulingService> _logger;
 
         public AlgoTaskSchedulingService(
@@ -19,6 +21,7 @@ namespace SIFS.Application.Scheduling
             IAlgoRuntimeConfigResolver runtimeConfigResolver,
             IAlgoTaskLimiterRegistryService limiterRegistry,
             IAlgoTaskAppService algoTaskAppService,
+            ITaskAuditService taskAuditService,
             ILogger<AlgoTaskSchedulingService> logger)
         {
             _algoTaskRepository = algoTaskRepository;
@@ -26,6 +29,7 @@ namespace SIFS.Application.Scheduling
             _runtimeConfigResolver = runtimeConfigResolver;
             _limiterRegistry = limiterRegistry;
             _algoTaskAppService = algoTaskAppService;
+            _taskAuditService = taskAuditService;
             _logger = logger;
         }
 
@@ -97,7 +101,7 @@ namespace SIFS.Application.Scheduling
                 await resourcePoolLimiter.WaitAsync(cancellationToken);
                 resourcePoolLimiterAcquired = true;
 
-                await ExecuteClaimedTaskAsync(workerId, item, runtimeConfig, cancellationToken);
+                await ExecuteClaimedTaskAsync(workerId, item, taskResult.Data.TaskId, runtimeConfig, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -124,6 +128,7 @@ namespace SIFS.Application.Scheduling
         private async Task ExecuteClaimedTaskAsync(
             int workerId,
             AlgoTaskQueueItem item,
+            Guid parentTaskId,
             AlgoRuntimeConfig runtimeConfig,
             CancellationToken cancellationToken)
         {
@@ -132,7 +137,7 @@ namespace SIFS.Application.Scheduling
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!await _algoTaskRepository.TryMarkRunningAsync(taskId))
+            if (!await _algoTaskRepository.TryMarkRunningAsync(taskId, algoModelId))
             {
                 _logger.LogInformation(
                     "AlgoTaskScheduler worker {WorkerId} skipped task because it was not claimable, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}, ResourcePool: {ResourcePool}",
@@ -142,6 +147,14 @@ namespace SIFS.Application.Scheduling
                     runtimeConfig.ResourcePool);
                 return;
             }
+
+            await _taskAuditService.RecordTransitionAsync(
+                parentTaskId,
+                "pending",
+                "processing",
+                "worker started task",
+                null,
+                new { algo_task_id = taskId, algo_model_id = algoModelId, resource_pool = runtimeConfig.ResourcePool });
 
             try
             {

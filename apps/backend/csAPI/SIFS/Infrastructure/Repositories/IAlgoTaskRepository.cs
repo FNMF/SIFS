@@ -13,7 +13,7 @@ namespace SIFS.Infrastructure.Repositories
         Task<List<AlgoReadDto>> GetAllReadDtosByTaskIdAsync(Guid taskId);
         Task<AlgoTaskDetailDto?> GetDetailDtoByIdAsync(Guid algoTaskId, Guid userId, bool canViewAllTasks = false);
         Task<bool> IsRunningAsync(Guid id);
-        Task<bool> TryMarkRunningAsync(Guid id);
+        Task<bool> TryMarkRunningAsync(Guid id, int algoModelId);
         Task<bool> TryMarkDoneAsync(Guid id);
         Task<bool> TryMarkFailedAsync(Guid id, string failureReason);
         Task<bool> TryMarkFailedBeforeRunningAsync(Guid id, string failureReason);

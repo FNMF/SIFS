@@ -172,11 +172,14 @@ namespace SIFS.Infrastructure.Repositories
                 .AnyAsync(x => x.Id == id && x.Status == (int)AlgoTaskStatus.running && x.DeletedAt == null);
         }
 
-        public async Task<bool> TryMarkRunningAsync(Guid id)
+        public async Task<bool> TryMarkRunningAsync(Guid id, int algoModelId)
         {
             var now = DateTime.UtcNow;
             var affected = await _context.AlgoTasks
-                .Where(x => x.Id == id && x.Status == (int)AlgoTaskStatus.pending && x.DeletedAt == null)
+                .Where(x => x.Id == id &&
+                    x.AlgoModelId == algoModelId &&
+                    x.Status == (int)AlgoTaskStatus.pending &&
+                    x.DeletedAt == null)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Status, (int)AlgoTaskStatus.running)
                     .SetProperty(x => x.StartedAt, x => x.StartedAt ?? now)
@@ -192,6 +195,7 @@ namespace SIFS.Infrastructure.Repositories
                 .Where(x => x.Id == id && x.Status == (int)AlgoTaskStatus.running && x.DeletedAt == null)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Status, (int)AlgoTaskStatus.done)
+                    .SetProperty(x => x.FailureReason, (string?)null)
                     .SetProperty(x => x.FinishedAt, now)
                     .SetProperty(x => x.UpdatedAt, now));
 

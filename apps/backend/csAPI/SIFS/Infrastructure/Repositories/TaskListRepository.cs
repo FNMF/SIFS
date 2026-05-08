@@ -252,14 +252,8 @@ namespace SIFS.Infrastructure.Repositories
             typeof(DetectionTask).GetProperty("UpdatedAt")!
                 .SetValue(detectionTask, taskList.UpdatedAt);
 
-            // 同步状态（通过 AlgoTask）
-            foreach (var algo in algoTasks)
-            {
-                if (algo.Status == (int)AlgoTaskStatus.done)
-                {
-                    detectionTask.OnAlgoTaskCompleted();
-                }
-            }
+            var completedCount = algoTasks.Count(x => x.Status == (int)AlgoTaskStatus.done);
+            detectionTask.SetCompletedSubTaskCount(completedCount);
 
             return detectionTask;
         }

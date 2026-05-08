@@ -43,10 +43,9 @@ namespace SIFS.Domain.Entities
             return Urls.SelectMany(url => Algorithms.Select(algorithm => new TaskItem(Id, url, algorithm, Level))).ToList();
         }
 
-        public bool OnAlgoTaskCompleted()
+        public void SetCompletedSubTaskCount(int completedCount)
         {
-            Status++;
-            return IsCompleted;
+            Status = Math.Max(completedCount, 0);
         }
     }
 

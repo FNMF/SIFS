@@ -46,7 +46,14 @@ namespace SIFS.Application.AlgoTaskApp
 
         public async Task ExecuteAsync(Guid algoTaskId)
         {
-            if (!await _algoTaskRepo.TryMarkRunningAsync(algoTaskId))
+            var taskResult = await _algoTaskRepo.GetTaskByIdAsync(algoTaskId);
+            if (!taskResult.IsSuccess || !taskResult.Data.AlgoModelId.HasValue)
+            {
+                _logger.LogWarning("算法任务 {AlgoTaskId} 缺少有效算法模型，跳过执行", algoTaskId);
+                return;
+            }
+
+            if (!await _algoTaskRepo.TryMarkRunningAsync(algoTaskId, taskResult.Data.AlgoModelId.Value))
             {
                 _logger.LogInformation("算法任务 {AlgoTaskId} 未抢占成功，跳过执行", algoTaskId);
                 return;
@@ -54,6 +61,14 @@ namespace SIFS.Application.AlgoTaskApp
 
             try
             {
+                await _taskAuditService.RecordTransitionAsync(
+                    taskResult.Data.TaskId,
+                    "pending",
+                    "processing",
+                    "worker started task",
+                    null,
+                    new { algo_task_id = taskResult.Data.Id, algorithm = taskResult.Data.AlgoName });
+
                 var executionResult = await ExecuteCoreAsync(algoTaskId);
                 if (await _algoTaskRepo.TryMarkDoneAsync(algoTaskId))
                     await HandleExecutionSucceededAsync(algoTaskId, executionResult);
@@ -78,15 +93,6 @@ namespace SIFS.Application.AlgoTaskApp
 
             if (task.Status != SIFS.Domain.Enum.AlgoTaskStatus.running)
                 throw new InvalidOperationException($"task is not running: {task.Status}");
-
-            _logger.LogInformation("开始执行算法任务 {AlgoTaskId}", algoTaskId);
-            await _taskAuditService.RecordTransitionAsync(
-                task.TaskId,
-                "pending",
-                "processing",
-                "worker started task",
-                null,
-                new { algo_task_id = task.Id, algorithm = task.AlgoName });
 
             var parentEntityResult = await _taskListRepo.GetTaskListByIdAsync(task.TaskId);
             if (!parentEntityResult.IsSuccess)
@@ -157,9 +163,10 @@ namespace SIFS.Application.AlgoTaskApp
                 return;
 
             var task = taskResult.Data;
+            var fromStatus = task.StartedAt.HasValue ? "processing" : "pending";
             await _taskAuditService.RecordTransitionAsync(
                 task.TaskId,
-                "processing",
+                fromStatus,
                 "failed",
                 failureReason,
                 null,
