@@ -1,0 +1,151 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sifs-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: sifs
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./deploy/docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  backend-1:
+    build:
+      context: ./apps/backend/csAPI/SIFS
+      dockerfile: Dockerfile
+    container_name: sifs-backend-1
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=mysql;Database=sifs;User=root;Password=${MYSQL_ROOT_PASSWORD:-123456};Allow User Variables=True;
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-SIFS_Docker_Default_Secret_Key_Change_Me_123456}
+      Jwt__Issuer: SIFS
+      Jwt__Audience: WebClient
+      Jwt__ExpiresMinutes: 25
+      AppUrlOptions__BaseUrl: ${PUBLIC_BASE_URL:-http://localhost}
+      AppUrlOptions__PyBaseUrl: ${PUBLIC_BASE_URL:-http://localhost}
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+      fldcf-api:
+        condition: service_started
+      fecdnet-api:
+        condition: service_started
+    volumes:
+      - app-data:/data
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  backend-2:
+    build:
+      context: ./apps/backend/csAPI/SIFS
+      dockerfile: Dockerfile
+    container_name: sifs-backend-2
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=mysql;Database=sifs;User=root;Password=${MYSQL_ROOT_PASSWORD:-123456};Allow User Variables=True;
+      Jwt__SecretKey: ${JWT_SECRET_KEY:-SIFS_Docker_Default_Secret_Key_Change_Me_123456}
+      Jwt__Issuer: SIFS
+      Jwt__Audience: WebClient
+      Jwt__ExpiresMinutes: 25
+      AppUrlOptions__BaseUrl: ${PUBLIC_BASE_URL:-http://localhost}
+      AppUrlOptions__PyBaseUrl: ${PUBLIC_BASE_URL:-http://localhost}
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+      fldcf-api:
+        condition: service_started
+      fecdnet-api:
+        condition: service_started
+    volumes:
+      - app-data:/data
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/frontend/web
+      dockerfile: Dockerfile
+    container_name: sifs-web
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  web-op:
+    build:
+      context: ./apps/frontend/web-op
+      dockerfile: Dockerfile
+    container_name: sifs-web-op
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  fldcf-api:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../deploy/docker/algo-images/fldcf.Dockerfile
+    container_name: sifs-fldcf-api
+    environment:
+      SIFS_DATA_ROOT: /data
+      API_PUBLIC_BASE_URL: ""
+      ALLOWED_ORIGINS: http://localhost,http://localhost:80
+      TZ: Asia/Shanghai
+    volumes:
+      - app-data:/data
+    gpus: all
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  fecdnet-api:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../deploy/docker/algo-images/fecdnet.Dockerfile
+    container_name: sifs-fecdnet-api
+    environment:
+      SIFS_DATA_ROOT: /data
+      FECDNET_WEIGHT_PATH: /app/model/fecdnet.pth
+      API_PUBLIC_BASE_URL: ""
+      ALLOWED_ORIGINS: http://localhost,http://localhost:80
+      TZ: Asia/Shanghai
+    volumes:
+      - app-data:/data
+    gpus: all
+    expose:
+      - "8001"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sifs-nginx
+    depends_on:
+      - backend-1
+      - backend-2
+      - web
+      - web-op
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./deploy/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  app-data:

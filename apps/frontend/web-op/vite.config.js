@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {
