@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $tempRoot = Join-Path $env:TEMP ("sifs-task-management-verify-" + [Guid]::NewGuid().ToString("N"))
@@ -259,7 +259,7 @@ async Task<Guid> CreateTaskAsync(Guid ownerId, string label, AlgoTaskStatus stat
     {
         Id = localFileId,
         AlgoTaskId = algoTaskId,
-        UrlLocal = "/Files/verify-" + label + ".png",
+        UrlLocal = "/data/user_input/verify/verify-" + label + ".png",
         Sid = 0,
         CreatedAt = now,
         UpdatedAt = now
@@ -277,7 +277,7 @@ async Task<Guid> CreateTaskAsync(Guid ownerId, string label, AlgoTaskStatus stat
         AlgoType = 0,
         IsFake = false,
         Confidence = 0.1,
-        MaskLocalUrl = "/Files/result-" + label + ".png"
+        MaskLocalUrl = "/data/fldcf_output/verify/result-" + label + ".png"
     });
     db.TaskAudits.Add(new TaskAudit
     {

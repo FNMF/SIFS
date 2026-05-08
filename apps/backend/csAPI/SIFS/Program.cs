@@ -209,18 +209,6 @@ namespace SIFS
                 }
             });
 
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "Files")),
-                RequestPath = "/Files",
-                OnPrepareResponse = ctx =>
-                {
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:5173");
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization");
-                }
-            });
 
             app.MapControllers();
             app.MapHub<DashboardHub>("/admin/dashboard/hub");

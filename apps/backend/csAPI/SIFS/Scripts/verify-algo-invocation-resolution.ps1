@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $tempRoot = Join-Path $env:TEMP ("sifs-algo-invoke-verify-" + [Guid]::NewGuid().ToString("N"))
@@ -183,7 +183,7 @@ try
     {
         Id = localFileId,
         AlgoTaskId = algoTaskId,
-        UrlLocal = "/Files/verify.png",
+        UrlLocal = "/data/user_input/verify/verify.png",
         Sid = 0,
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
