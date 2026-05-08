@@ -1,5 +1,4 @@
-using SIFS.Application.AlgoTaskApp;
-using SIFS.Infrastructure.Repositories;
+using SIFS.Application.Scheduling;
 
 namespace SIFS.Infrastructure
 {
@@ -59,112 +58,30 @@ namespace SIFS.Infrastructure
 
         private async Task ProcessTaskAsync(int workerId, AlgoTaskQueueItem item, CancellationToken stoppingToken)
         {
-            var taskId = item.TaskId;
-            var algoModelId = item.AlgoModelId;
-
             using var scope = _scopeFactory.CreateScope();
-            var appService = scope.ServiceProvider.GetRequiredService<IAlgoTaskAppService>();
-            var algoTaskRepository = scope.ServiceProvider.GetRequiredService<IAlgoTaskRepository>();
+            var scheduler = scope.ServiceProvider.GetRequiredService<IAlgoTaskSchedulingService>();
 
             try
             {
-                stoppingToken.ThrowIfCancellationRequested();
-
-                if (!await algoTaskRepository.TryMarkRunningAsync(taskId))
-                {
-                    _logger.LogInformation(
-                        "AlgoTaskWorker-{WorkerId} skipped task because it was not claimable, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
-                        workerId,
-                        taskId,
-                        algoModelId);
-                    return;
-                }
-
-                _logger.LogInformation(
-                    "AlgoTaskWorker-{WorkerId} claimed task, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
-                    workerId,
-                    taskId,
-                    algoModelId);
-
-                var executionResult = await appService.ExecuteCoreAsync(taskId);
-
-                if (await algoTaskRepository.TryMarkDoneAsync(taskId))
-                {
-                    await appService.HandleExecutionSucceededAsync(taskId, executionResult);
-                    _logger.LogInformation(
-                        "AlgoTaskWorker-{WorkerId} completed task, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
-                        workerId,
-                        taskId,
-                        algoModelId);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "AlgoTaskWorker-{WorkerId} skipped done update because task is no longer running, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
-                        workerId,
-                        taskId,
-                        algoModelId);
-                }
+                await scheduler.ProcessAsync(workerId, item, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation(
                     "AlgoTaskWorker-{WorkerId} task interrupted by stop signal, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
                     workerId,
-                    taskId,
-                    algoModelId);
+                    item.TaskId,
+                    item.AlgoModelId);
             }
             catch (Exception ex)
             {
-                var failureReason = ToSafeFailureReason(ex);
-
-                try
-                {
-                    if (await algoTaskRepository.TryMarkFailedAsync(taskId, failureReason))
-                    {
-                        await appService.HandleExecutionFailedAsync(taskId, failureReason);
-                    }
-                    else
-                    {
-                        _logger.LogWarning(
-                            "AlgoTaskWorker-{WorkerId} skipped failed update because task is no longer running, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
-                            workerId,
-                            taskId,
-                            algoModelId);
-                    }
-                }
-                catch (Exception failureHandlingError)
-                {
-                    _logger.LogError(
-                        failureHandlingError,
-                        "AlgoTaskWorker-{WorkerId} failed while handling task failure, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
-                        workerId,
-                        taskId,
-                        algoModelId);
-                }
-
                 _logger.LogError(
                     ex,
-                    "AlgoTaskWorker-{WorkerId} failed task execution, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
+                    "AlgoTaskWorker-{WorkerId} failed while dispatching task to scheduler, TaskId: {TaskId}, AlgoModelId: {AlgoModelId}",
                     workerId,
-                    taskId,
-                    algoModelId);
+                    item.TaskId,
+                    item.AlgoModelId);
             }
-        }
-
-        private static string ToSafeFailureReason(Exception ex)
-        {
-            return ex switch
-            {
-                TaskCanceledException => "algorithm request timeout",
-                HttpRequestException => string.IsNullOrWhiteSpace(ex.Message)
-                    ? "algorithm request failed"
-                    : ex.Message,
-                InvalidOperationException => string.IsNullOrWhiteSpace(ex.Message)
-                    ? "algorithm invocation failed"
-                    : ex.Message,
-                _ => "algorithm invocation failed"
-            };
         }
     }
 }

@@ -216,6 +216,24 @@ namespace SIFS.Infrastructure.Repositories
             return affected == 1;
         }
 
+        public async Task<bool> TryMarkFailedBeforeRunningAsync(Guid id, string failureReason)
+        {
+            var now = DateTime.UtcNow;
+            var safeReason = string.IsNullOrWhiteSpace(failureReason)
+                ? "algorithm invocation failed"
+                : failureReason;
+
+            var affected = await _context.AlgoTasks
+                .Where(x => x.Id == id && x.Status == (int)AlgoTaskStatus.pending && x.DeletedAt == null)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Status, (int)AlgoTaskStatus.failed)
+                    .SetProperty(x => x.FailureReason, safeReason)
+                    .SetProperty(x => x.FinishedAt, now)
+                    .SetProperty(x => x.UpdatedAt, now));
+
+            return affected == 1;
+        }
+
         public async Task InsertAsync(AlgoTask algoTask)
         {
             await _context.AlgoTasks.AddAsync(algoTask);

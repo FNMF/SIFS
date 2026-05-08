@@ -16,6 +16,7 @@ namespace SIFS.Infrastructure.Repositories
         Task<bool> TryMarkRunningAsync(Guid id);
         Task<bool> TryMarkDoneAsync(Guid id);
         Task<bool> TryMarkFailedAsync(Guid id, string failureReason);
+        Task<bool> TryMarkFailedBeforeRunningAsync(Guid id, string failureReason);
         Task InsertAsync(AlgoTask algoTask);
         Task UpdateAsync(AlgoTask algoTask);
     }
