@@ -6,16 +6,33 @@ const API_BASE_URL = ''
 
 let isRefreshing = false
 let pendingQueue = []
+let hasRedirectedToLogin = false
 
 function processQueue(token) {
   pendingQueue.forEach(({ resolve, reject }) => {
     if (token) {
       resolve(token)
     } else {
-      reject(new Error('登录已失效'))
+      reject(new Error('登录状态已失效'))
     }
   })
   pendingQueue = []
+}
+
+function redirectToLogin(authStore) {
+  authStore.clearAuth()
+
+  if (typeof window === 'undefined' || hasRedirectedToLogin) {
+    return
+  }
+
+  if (window.location.pathname === '/login') {
+    return
+  }
+
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}` || '/'
+  hasRedirectedToLogin = true
+  window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
 }
 
 async function doRefreshToken() {
@@ -43,7 +60,6 @@ async function doRefreshToken() {
   }
 
   const data = await response.json()
-
   const loginData = data?.Data || data?.data || data
   const newAccessToken = loginData?.AccessToken || loginData?.accessToken
   const newRefreshToken = loginData?.RefreshToken || loginData?.refreshToken
@@ -71,6 +87,11 @@ async function parseResponse(response) {
   return contentType.includes('application/json')
     ? await response.json()
     : await response.text()
+}
+
+function getErrorMessage(data, fallback = '请求失败') {
+  if (typeof data === 'string') return data || fallback
+  return data?.message || data?.Message || data?.title || fallback
 }
 
 export async function request(url, options = {}, extra = {}) {
@@ -116,6 +137,7 @@ export async function request(url, options = {}, extra = {}) {
               authStore.clearAuth()
               processQueue(null)
               ElMessage.error(error.message || '登录已过期，请重新登录')
+              redirectToLogin(authStore)
             })
             .finally(() => {
               isRefreshing = false
@@ -137,16 +159,22 @@ export async function request(url, options = {}, extra = {}) {
       const retryData = await parseResponse(retryResponse)
 
       if (!retryResponse.ok) {
-        const retryMessage =
-          typeof retryData === 'string'
-            ? retryData
-            : retryData?.message || retryData?.Message || '请求失败'
+        if (retryResponse.status === 401) {
+          redirectToLogin(authStore)
+        }
+
+        const retryMessage = getErrorMessage(retryData)
         ElMessage.error(retryMessage)
-        throw new Error(retryMessage)
+        const error = new Error(retryMessage)
+        error.status = retryResponse.status
+        throw error
       }
 
       return retryData
     } catch (error) {
+      if (error.status === 401) {
+        redirectToLogin(authStore)
+      }
       throw error
     }
   }
@@ -154,12 +182,15 @@ export async function request(url, options = {}, extra = {}) {
   const data = await parseResponse(response)
 
   if (!response.ok) {
-    const message =
-      typeof data === 'string'
-        ? data
-        : data?.message || data?.Message || '请求失败'
+    if (response.status === 401) {
+      redirectToLogin(authStore)
+    }
+
+    const message = getErrorMessage(data)
     ElMessage.error(message)
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
   }
 
   return data
