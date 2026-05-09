@@ -147,7 +147,7 @@ onMounted(loadLogs)
 
 .operation-log-filter-row--actions {
   grid-template-columns: minmax(360px, 560px) auto;
-  justify-content: start;
+  justify-content: space-between;
 }
 
 .operation-log-query-button {
