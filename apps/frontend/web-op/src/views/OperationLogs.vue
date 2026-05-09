@@ -5,28 +5,32 @@
     </template>
 
     <section class="op-panel">
-      <div class="filter-row filter-row--wide">
-        <el-input v-model="query.actor_username" placeholder="操作人" clearable />
-        <el-input v-model="query.operation_type" placeholder="操作类型" clearable />
-        <el-input v-model="query.target_type" placeholder="目标类型" clearable />
-        <el-select v-model="query.success" clearable placeholder="结果">
-          <el-option label="成功" :value="true" />
-          <el-option label="失败" :value="false" />
-        </el-select>
-        <el-date-picker
-          v-model="timeRange"
-          type="datetimerange"
-          start-placeholder="开始时间"
-          end-placeholder="结束时间"
-        />
-        <el-button
-          class="operation-log-query-button"
-          type="primary"
-          :icon="Search"
-          @click="loadLogs"
-        >
-          查询
-        </el-button>
+      <div class="operation-log-filters">
+        <div class="operation-log-filter-row operation-log-filter-row--main">
+          <el-input v-model="query.actor_username" placeholder="操作人" clearable />
+          <el-input v-model="query.operation_type" placeholder="操作类型" clearable />
+          <el-input v-model="query.target_type" placeholder="目标类型" clearable />
+          <el-select v-model="query.success" clearable placeholder="结果">
+            <el-option label="成功" :value="true" />
+            <el-option label="失败" :value="false" />
+          </el-select>
+        </div>
+        <div class="operation-log-filter-row operation-log-filter-row--actions">
+          <el-date-picker
+            v-model="timeRange"
+            type="datetimerange"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+          />
+          <el-button
+            class="operation-log-query-button"
+            type="primary"
+            :icon="Search"
+            @click="loadLogs"
+          >
+            查询
+          </el-button>
+        </div>
       </div>
 
       <el-table v-loading="loading" :data="items" border empty-text="暂无日志数据">
@@ -125,9 +129,37 @@ onMounted(loadLogs)
 </script>
 
 <style scoped>
+.operation-log-filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.operation-log-filter-row {
+  display: grid;
+  gap: 12px;
+  align-items: center;
+}
+
+.operation-log-filter-row--main {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+}
+
+.operation-log-filter-row--actions {
+  grid-template-columns: minmax(360px, 560px) auto;
+  justify-content: start;
+}
+
 .operation-log-query-button {
   min-width: 88px;
   flex-shrink: 0;
   justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .operation-log-filter-row--main,
+  .operation-log-filter-row--actions {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
