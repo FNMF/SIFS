@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import { getDetectionTaskListApi } from '../services/detectionTask'
+import { formatTime } from '../utils/format'
 
 const router = useRouter()
 const loading = ref(false)
@@ -75,7 +76,7 @@ onMounted(fetchTasks)
             <div class="task-card__top">
               <div>
                 <h3>{{ task.guid }}</h3>
-                <p>最近更新时间：{{ task.updatedAt || '暂无' }}</p>
+                <p>最近更新时间：{{ formatTime(task.updatedAt) }}</p>
               </div>
               <el-tag :type="task.completion >= 1 ? 'success' : 'warning'">
                 {{ Math.round(task.completion * 100) }}%

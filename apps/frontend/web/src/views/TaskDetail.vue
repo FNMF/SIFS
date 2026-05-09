@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '../components/AppHeader.vue'
 import { getDetectionTaskDetailApi } from '../services/detectionTask'
+import { formatTime } from '../utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -125,7 +126,7 @@ onUnmounted(() => {
                 <div class="summary-item"><span>Level</span><strong>{{ task.level + 1 ?? '未设置' }}</strong></div>
                 <div class="summary-item"><span>完成度</span><strong>{{ Math.round(task.completion * 100) }}%</strong></div>
                 <div class="summary-item"><span>子任务</span><strong>{{ task.completedSubTaskCount }}/{{ task.subTaskCount }}</strong></div>
-                <div class="summary-item"><span>更新时间</span><strong>{{ task.updatedAt || '暂无' }}</strong></div>
+                <div class="summary-item"><span>更新时间</span><strong>{{ formatTime(task.updatedAt) }}</strong></div>
               </div>
             </div>
           </div>
@@ -147,7 +148,7 @@ onUnmounted(() => {
                   <div>
                     <h4>{{ algo.type || '未命名算法' }}</h4>
                     <p>{{ algo.guid }}</p>
-                    <span>更新时间：{{ algo.updatedAt || '暂无' }}</span>
+                    <span>更新时间：{{ formatTime(algo.updatedAt) }}</span>
                   </div>
                 </div>
 
