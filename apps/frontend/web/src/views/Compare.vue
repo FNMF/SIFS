@@ -37,8 +37,9 @@ const overlayStyle = computed(() => ({
 }))
 
 function goBack() {
-  if (compareData.value.taskId) {
-    router.push(`/tasks/${compareData.value.taskId}`)
+  const parentTaskId = compareData.value.taskId || route.query.taskId
+  if (parentTaskId) {
+    router.push(`/tasks/${parentTaskId}`)
     return
   }
 
@@ -68,7 +69,7 @@ function normalizeNumber(value) {
 
 function normalizeCompareData(item) {
   return {
-    taskId: item.taskId ?? item.TaskId ?? '',
+    taskId: item.taskId ?? item.TaskId ?? route.query.taskId ?? '',
     originImageUrl: item.originImageUrl ?? item.OriginImageUrl ?? '',
     maskUrl: item.maskUrl ?? item.MaskUrl ?? '',
     type: item.type ?? item.Type ?? '',

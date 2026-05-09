@@ -73,7 +73,10 @@ function getStatusType(status) {
 }
 
 function openCompare(algo) {
-  router.push(`/compare/${algo.guid}`)
+  router.push({
+    path: `/compare/${algo.guid}`,
+    query: { taskId: task.value?.guid || route.params.guid }
+  })
 }
 
 
