@@ -19,7 +19,6 @@ const routes = [
   { path: '/login', name: 'login', component: Login },
   { path: '/register', name: 'register', component: Register },
   { path: '/upload', name: 'upload', component: Upload, meta: { requiresAuth: true } },
-  { path: '/tasks', redirect: '/history', meta: { requiresAuth: true } },
   { path: '/history', name: 'history', component: History, meta: { requiresAuth: true } },
   { path: '/tasks/:guid', name: 'task-detail', component: TaskDetail, meta: { requiresAuth: true } }
 ]
