@@ -4,6 +4,8 @@
     {
         public Guid Guid { get; set; }
 
+        public Guid TaskId { get; set; }
+
         public string OriginImageUrl { get; set; } = string.Empty;
 
         public string MaskUrl { get; set; } = string.Empty;

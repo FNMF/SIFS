@@ -144,6 +144,7 @@ namespace SIFS.Infrastructure.Repositories
             return new AlgoTaskDetailDto
             {
                 Guid = algoTask.Id,
+                TaskId = algoTask.TaskId,
                 OriginImageUrl = localFile == null
                     ? string.Empty
                     : _fileUrlBuilder.ToAbsoluteUrl(localFile.UrlLocal),

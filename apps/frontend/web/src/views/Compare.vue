@@ -18,6 +18,7 @@ const opacity = ref(0.55)
 const maskColor = ref('#ff3b30')
 
 const compareData = ref({
+  taskId: '',
   originImageUrl: '',
   maskUrl: '',
   type: '',
@@ -36,7 +37,12 @@ const overlayStyle = computed(() => ({
 }))
 
 function goBack() {
-  router.push('/tasks')
+  if (compareData.value.taskId) {
+    router.push(`/tasks/${compareData.value.taskId}`)
+    return
+  }
+
+  router.push('/history')
 }
 
 function withNoCache(url) {
@@ -62,6 +68,7 @@ function normalizeNumber(value) {
 
 function normalizeCompareData(item) {
   return {
+    taskId: item.taskId ?? item.TaskId ?? '',
     originImageUrl: item.originImageUrl ?? item.OriginImageUrl ?? '',
     maskUrl: item.maskUrl ?? item.MaskUrl ?? '',
     type: item.type ?? item.Type ?? '',
