@@ -36,7 +36,7 @@ const overlayStyle = computed(() => ({
 }))
 
 function goBack() {
-  router.push('/history')
+  router.push('/tasks')
 }
 
 function withNoCache(url) {
@@ -234,7 +234,7 @@ onMounted(() => {
   <div class="compare-page">
     <header class="compare-header">
       <div class="container compare-header__inner">
-        <el-button round @click="goBack">返回历史</el-button>
+        <el-button round @click="goBack">返回任务列表</el-button>
         <div class="compare-header__title">结果比对</div>
       </div>
     </header>

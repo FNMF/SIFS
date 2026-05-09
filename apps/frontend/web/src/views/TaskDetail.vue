@@ -76,9 +76,6 @@ function openCompare(algo) {
   router.push(`/compare/${algo.guid}`)
 }
 
-function goTaskList() {
-  router.push('/tasks')
-}
 
 onMounted(() => {
   fetchDetail()
@@ -100,7 +97,6 @@ onUnmounted(() => {
           <h1>任务详情</h1>
           <p>查看当前检测任务下各算法子任务的处理状态，并在完成后进入对比展示页面。</p>
         </div>
-        <el-button round @click="goTaskList">返回任务列表</el-button>
         <el-button round @click="fetchDetail">刷新状态</el-button>
       </section>
 
