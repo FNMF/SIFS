@@ -58,7 +58,7 @@ namespace SIFS.Migrations
                 INSERT IGNORE INTO algo_models
                     (id, name, enabled, api_url, description, reserved_json, created_at, updated_at)
                 VALUES
-                    (0, 'FLDCF', TRUE, 'http://127.0.0.1:8000/detect/fldcf', 'Default FLDCF algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP());
+                    (1, 'FLDCF', TRUE, 'http://127.0.0.1:8000/detect/fldcf', 'Default FLDCF algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP());
                 """);
         }
 

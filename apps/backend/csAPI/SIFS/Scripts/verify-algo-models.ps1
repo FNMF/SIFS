@@ -95,7 +95,7 @@ Assert(logTypes.Contains(AppEventTypes.AlgoUpdated), "update triggers operation 
 Assert(logTypes.Contains(AppEventTypes.AlgoEnabled), "enable triggers operation log");
 Assert(logTypes.Contains(AppEventTypes.AlgoDisabled), "disable triggers operation log");
 
-var defaultFldcf = await service.GetEnabledAlgoByIdAsync(0);
+var defaultFldcf = await service.GetEnabledAlgoByIdAsync(1);
 Assert(defaultFldcf.IsSuccess && defaultFldcf.Data.Name == "FLDCF", "default FLDCF is enabled for existing business flow");
 
 var logs = await db.OperationLogs.Where(x => x.TargetType == "algo" && x.TargetId == create.Data.Id.ToString()).ToListAsync();

@@ -16,16 +16,16 @@ namespace SIFS.Migrations
                 );
 
                 DELETE FROM algo_models
-                WHERE id = 0 AND name <> 'FLDCF';
+                WHERE id = 1 AND name <> 'FLDCF';
 
                 UPDATE algo_models
-                SET id = 0
+                SET id = 1
                 WHERE name = 'FLDCF' AND @fldcf_generated_id IS NOT NULL;
 
                 INSERT INTO algo_models
                     (id, name, enabled, api_url, description, reserved_json, created_at, updated_at)
                 SELECT
-                    0, 'FLDCF', TRUE, 'http://127.0.0.1:8000/detect/fldcf', 'Default FLDCF algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+                    1, 'FLDCF', TRUE, 'http://127.0.0.1:8000/detect/fldcf', 'Default FLDCF algorithm endpoint', NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP()
                 WHERE NOT EXISTS (SELECT 1 FROM algo_models WHERE name = 'FLDCF');
                 """);
         }
@@ -35,8 +35,8 @@ namespace SIFS.Migrations
         {
             migrationBuilder.Sql("""
                 UPDATE algo_models
-                SET id = 1
-                WHERE id = 0 AND name = 'FLDCF';
+                SET id = 0
+                WHERE id = 1 AND name = 'FLDCF';
                 """);
         }
     }
