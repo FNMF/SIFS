@@ -13,8 +13,20 @@
           <el-option label="成功" :value="true" />
           <el-option label="失败" :value="false" />
         </el-select>
-        <el-date-picker v-model="timeRange" type="datetimerange" start-placeholder="开始时间" end-placeholder="结束时间" />
-        <el-button type="primary" @click="loadLogs">查询</el-button>
+        <el-date-picker
+          v-model="timeRange"
+          type="datetimerange"
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+        />
+        <el-button
+          class="operation-log-query-button"
+          type="primary"
+          :icon="Search"
+          @click="loadLogs"
+        >
+          查询
+        </el-button>
       </div>
 
       <el-table v-loading="loading" :data="items" border empty-text="暂无日志数据">
@@ -66,7 +78,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Search } from '@element-plus/icons-vue'
 import AdminLayout from '../layouts/AdminLayout.vue'
 import { operationLogApi } from '../services/admin'
 import { formatTime } from '../utils/format'
@@ -111,3 +123,11 @@ async function loadLogs() {
 
 onMounted(loadLogs)
 </script>
+
+<style scoped>
+.operation-log-query-button {
+  min-width: 88px;
+  flex-shrink: 0;
+  justify-content: center;
+}
+</style>
