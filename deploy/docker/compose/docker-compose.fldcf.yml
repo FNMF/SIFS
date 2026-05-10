@@ -1,0 +1,21 @@
+# Standalone FLDCF algorithm API deployment.
+# Usage from repository root:
+#   docker compose -f deploy/docker/compose/docker-compose.fldcf.yml up -d --build
+
+services:
+  fldcf-api:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../deploy/docker/algo-images/fldcf.Dockerfile
+    container_name: sifs-fldcf-api
+    environment:
+      SIFS_DATA_ROOT: /data
+      API_PUBLIC_BASE_URL: ${FLDCF_PUBLIC_BASE_URL:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80}
+      TZ: Asia/Shanghai
+    volumes:
+      - ../../../apps/data:/data
+    gpus: all
+    ports:
+      - "${FLDCF_API_PORT:-8000}:8000"
+    restart: unless-stopped

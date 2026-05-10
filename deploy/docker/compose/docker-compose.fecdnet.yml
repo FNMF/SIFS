@@ -1,0 +1,22 @@
+# Standalone FECDNet algorithm API deployment.
+# Usage from repository root:
+#   docker compose -f deploy/docker/compose/docker-compose.fecdnet.yml up -d --build
+
+services:
+  fecdnet-api:
+    build:
+      context: ../../../apps/backend
+      dockerfile: ../../deploy/docker/algo-images/fecdnet.Dockerfile
+    container_name: sifs-fecdnet-api
+    environment:
+      SIFS_DATA_ROOT: /data
+      FECDNET_WEIGHT_PATH: ${FECDNET_WEIGHT_PATH:-/app/model/fecdnet.pth}
+      API_PUBLIC_BASE_URL: ${FECDNET_PUBLIC_BASE_URL:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost,http://localhost:80}
+      TZ: Asia/Shanghai
+    volumes:
+      - ../../../apps/data:/data
+    gpus: all
+    ports:
+      - "${FECDNET_API_PORT:-8001}:8001"
+    restart: unless-stopped

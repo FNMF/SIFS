@@ -1,0 +1,56 @@
+# Optional override for local all-in-one deployment.
+# Usage:
+#   docker compose -f docker-compose.yml -f deploy/docker/compose/docker-compose.local-full.yml up -d --build
+
+services:
+  backend:
+    depends_on:
+      mysql:
+        condition: service_healthy
+      fldcf-api:
+        condition: service_started
+      fecdnet-api:
+        condition: service_started
+
+  fldcf-api:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../deploy/docker/algo-images/fldcf.Dockerfile
+    container_name: sifs-fldcf-api
+    environment:
+      SIFS_DATA_ROOT: /data
+      API_PUBLIC_BASE_URL: ""
+      ALLOWED_ORIGINS: http://localhost,http://localhost:80
+      TZ: Asia/Shanghai
+    volumes:
+      - app-data:/data
+    gpus: all
+    expose:
+      - "8000"
+    ports:
+      - "${FLDCF_API_PORT:-8000}:8000"
+    restart: unless-stopped
+
+  fecdnet-api:
+    build:
+      context: ./apps/backend
+      dockerfile: ../../deploy/docker/algo-images/fecdnet.Dockerfile
+    container_name: sifs-fecdnet-api
+    environment:
+      SIFS_DATA_ROOT: /data
+      FECDNET_WEIGHT_PATH: /app/model/fecdnet.pth
+      API_PUBLIC_BASE_URL: ""
+      ALLOWED_ORIGINS: http://localhost,http://localhost:80
+      TZ: Asia/Shanghai
+    volumes:
+      - app-data:/data
+    gpus: all
+    expose:
+      - "8001"
+    ports:
+      - "${FECDNET_API_PORT:-8001}:8001"
+    restart: unless-stopped
+
+  nginx:
+    volumes:
+      - ./deploy/docker/nginx/nginx.local-full.conf:/etc/nginx/nginx.conf:ro
