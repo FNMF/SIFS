@@ -20,11 +20,7 @@ namespace SIFS
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
-            if (File.Exists(envPath))
-            {
-                DotNetEnv.Env.Load(envPath);
-            }
+            LoadDotEnvWithoutOverwritingExistingEnvironment(builder.Environment.ContentRootPath);
 
             builder.Configuration
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -224,6 +220,31 @@ namespace SIFS
             app.MapHub<TaskNotificationHub>("/task-notifications/hub");
 
             app.Run();
+        }
+
+        private static void LoadDotEnvWithoutOverwritingExistingEnvironment(string contentRootPath)
+        {
+            var envPath = Path.Combine(contentRootPath, ".env");
+            if (!File.Exists(envPath))
+                return;
+
+            foreach (var rawLine in File.ReadLines(envPath))
+            {
+                var line = rawLine.Trim();
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#", StringComparison.Ordinal))
+                    continue;
+
+                var separatorIndex = line.IndexOf('=');
+                if (separatorIndex <= 0)
+                    continue;
+
+                var key = line[..separatorIndex].Trim();
+                var value = line[(separatorIndex + 1)..].Trim().Trim('"');
+                if (string.IsNullOrWhiteSpace(key) || Environment.GetEnvironmentVariable(key) != null)
+                    continue;
+
+                Environment.SetEnvironmentVariable(key, value);
+            }
         }
     }
 }
