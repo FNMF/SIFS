@@ -6,6 +6,10 @@ namespace SIFS.Application.Rbac
     {
         Task<Result> AssignRolesToUserAsync(Guid userId, IEnumerable<string> roleNames);
 
+        Task<Result> SetUserRolesAsync(Guid userId, IEnumerable<string> roleNames);
+
+        Task<Result<List<RoleReadDto>>> GetRolesAsync();
+
         Task<Result<List<string>>> GetUserPermissionsAsync(Guid userId);
 
         Task<Result<List<string>>> GetUserRolesAsync(Guid userId);

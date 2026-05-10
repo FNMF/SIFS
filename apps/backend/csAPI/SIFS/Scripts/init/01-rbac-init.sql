@@ -21,7 +21,9 @@ INSERT INTO permissions (id, code, description, created_at, updated_at) VALUES
 (7, 'algo:update', 'Update algorithm configuration', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
 (8, 'algo:enable', 'Enable or disable algorithms', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
 (9, 'log:view', 'View operation logs', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
-(10, 'admin:access', 'Access administration features', UTC_TIMESTAMP(), UTC_TIMESTAMP())
+(10, 'admin:access', 'Access administration features', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
+(11, 'rbac:view', 'View RBAC roles, user roles, and user permissions', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
+(12, 'rbac:assign', 'Assign roles to users', UTC_TIMESTAMP(), UTC_TIMESTAMP())
 ON DUPLICATE KEY UPDATE
     code = VALUES(code),
     description = VALUES(description),

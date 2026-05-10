@@ -62,6 +62,76 @@ namespace SIFS.Application.Rbac
             return Result.Success("角色绑定成功");
         }
 
+        public async Task<Result> SetUserRolesAsync(Guid userId, IEnumerable<string> roleNames)
+        {
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+                return Result.Fail(ResultCode.NotFound, "用户不存在");
+
+            var normalizedRoleNames = roleNames
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var roles = normalizedRoleNames.Count == 0
+                ? new List<Role>()
+                : await _context.Roles
+                    .Where(r => normalizedRoleNames.Contains(r.Name))
+                    .ToListAsync();
+
+            var missingRoleNames = normalizedRoleNames
+                .Except(roles.Select(r => r.Name), StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (missingRoleNames.Count > 0)
+                return Result.Fail(ResultCode.NotFound, $"角色不存在: {string.Join(", ", missingRoleNames)}");
+
+            var targetRoleIds = roles.Select(r => r.Id).ToHashSet();
+            var existingUserRoles = await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .ToListAsync();
+
+            var userRolesToRemove = existingUserRoles
+                .Where(ur => !targetRoleIds.Contains(ur.RoleId))
+                .ToList();
+
+            if (userRolesToRemove.Count > 0)
+                _context.UserRoles.RemoveRange(userRolesToRemove);
+
+            var existingRoleIds = existingUserRoles.Select(ur => ur.RoleId).ToHashSet();
+            var userRolesToAdd = targetRoleIds
+                .Except(existingRoleIds)
+                .Select(roleId => new UserRole
+                {
+                    Id = UuidV7.NewUuidV7(),
+                    UserId = userId,
+                    RoleId = roleId
+                })
+                .ToList();
+
+            if (userRolesToAdd.Count > 0)
+                await _context.UserRoles.AddRangeAsync(userRolesToAdd);
+
+            await _context.SaveChangesAsync();
+            return Result.Success("用户角色已更新");
+        }
+
+        public async Task<Result<List<RoleReadDto>>> GetRolesAsync()
+        {
+            var roles = await _context.Roles
+                .OrderBy(role => role.Id)
+                .Select(role => new RoleReadDto
+                {
+                    Id = role.Id,
+                    Name = role.Name,
+                    Description = role.Description
+                })
+                .ToListAsync();
+
+            return Result<List<RoleReadDto>>.Success(roles);
+        }
+
         public async Task<Result<List<string>>> GetUserPermissionsAsync(Guid userId)
         {
             var permissions = await (

@@ -49,5 +49,13 @@ export const operationLogApi = {
 export const rbacApi = {
   me: () => request('/api/admin/rbac/me', {}, { silent: true }),
   myPermissions: () => request('/api/admin/rbac/permissions/me', {}, { silent: true }),
-  adminCheck: () => request('/api/admin/rbac/roles/admin-check', {}, { silent: true })
+  adminCheck: () => request('/api/admin/rbac/roles/admin-check', {}, { silent: true }),
+  roles: () => request('/api/admin/rbac/roles'),
+  users: (params) => request(`/api/admin/users${toQuery(params)}`),
+  userRoles: (id) => request(`/api/admin/rbac/users/${id}/roles`),
+  setUserRoles: (id, roles) => request(`/api/admin/rbac/users/${id}/roles`, {
+    method: 'POST',
+    body: JSON.stringify({ roles })
+  }),
+  userPermissions: (id) => request(`/api/admin/rbac/users/${id}/permissions`)
 }
