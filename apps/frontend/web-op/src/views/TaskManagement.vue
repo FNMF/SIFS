@@ -5,22 +5,26 @@
     </template>
 
     <section class="op-panel">
-      <div class="filter-row filter-row--wide">
-        <el-input v-model="query.keyword" placeholder="关键词" clearable @keyup.enter="loadTasks" />
-        <el-input v-model="query.user_id" placeholder="用户 ID" clearable />
-        <el-input v-model="query.algorithm_name" placeholder="算法名称" clearable />
-        <el-select v-model="query.status" clearable placeholder="状态">
-          <el-option label="运行中" value="1" />
-          <el-option label="成功" value="2" />
-          <el-option label="失败" value="3" />
-          <el-option label="已取消" value="4" />
-        </el-select>
-        <el-select v-model="query.failed" clearable placeholder="失败筛选">
-          <el-option label="仅失败" :value="true" />
-          <el-option label="非失败" :value="false" />
-        </el-select>
-        <el-date-picker v-model="timeRange" type="datetimerange" start-placeholder="开始时间" end-placeholder="结束时间" />
-        <el-button type="primary" @click="loadTasks">查询</el-button>
+      <div class="task-management-filters">
+        <div class="task-management-filter-row task-management-filter-row--main">
+          <el-input v-model="query.keyword" placeholder="关键词" clearable @keyup.enter="loadTasks" />
+          <el-input v-model="query.user_id" placeholder="用户 ID" clearable />
+          <el-input v-model="query.algorithm_name" placeholder="算法名称" clearable />
+          <el-select v-model="query.status" clearable placeholder="状态">
+            <el-option label="运行中" value="1" />
+            <el-option label="成功" value="2" />
+            <el-option label="失败" value="3" />
+            <el-option label="已取消" value="4" />
+          </el-select>
+          <el-select v-model="query.failed" clearable placeholder="失败筛选">
+            <el-option label="仅失败" :value="true" />
+            <el-option label="非失败" :value="false" />
+          </el-select>
+        </div>
+        <div class="task-management-filter-row task-management-filter-row--actions">
+          <el-date-picker v-model="timeRange" type="datetimerange" start-placeholder="开始时间" end-placeholder="结束时间" />
+          <el-button class="task-management-query-button" type="primary" @click="loadTasks">查询</el-button>
+        </div>
       </div>
 
       <el-table v-loading="loading" :data="items" border empty-text="暂无任务数据">
@@ -189,3 +193,44 @@ async function operate(type, row) {
 
 onMounted(loadTasks)
 </script>
+
+<style scoped>
+.task-management-filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.task-management-filter-row {
+  display: grid;
+  gap: 12px;
+  align-items: center;
+}
+
+.task-management-filter-row--main {
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+}
+
+.task-management-filter-row--actions {
+  grid-template-columns: minmax(360px, 560px) auto;
+  justify-content: space-between;
+}
+
+.task-management-query-button {
+  min-width: 88px;
+  justify-content: center;
+}
+
+@media (max-width: 1100px) {
+  .task-management-filter-row--main {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .task-management-filter-row--main,
+  .task-management-filter-row--actions {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
