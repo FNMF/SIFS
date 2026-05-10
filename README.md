@@ -59,7 +59,6 @@ Jwt__Audience=WebClient
 Jwt__SecretKey=CHANGE_ME_USE_A_LONG_RANDOM_SECRET
 Jwt__ExpiresMinutes=25
 AppUrlOptions__BaseUrl=http://localhost:5021
-AppUrlOptions__PyBaseUrl=http://localhost:5021
 ```
 
 ## Docker 部署
