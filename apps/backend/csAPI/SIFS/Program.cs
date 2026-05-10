@@ -20,14 +20,19 @@ namespace SIFS
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            DotNetEnv.Env.Load();
+            var envPath = Path.Combine(builder.Environment.ContentRootPath, ".env");
+            if (File.Exists(envPath))
+            {
+                DotNetEnv.Env.Load(envPath);
+            }
 
             builder.Configuration
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
             var connectionString = builder.Configuration["ConnectionStrings:DefaultConnection"];
-            var jwtKey = builder.Configuration["Jwt:SecretKey"];
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required. Configure ConnectionStrings__DefaultConnection in .env.");
             // Add services to the container.
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
@@ -70,7 +75,7 @@ namespace SIFS
             builder.Services.AddScoped<IAlgorithmEndpointResolver, AlgorithmEndpointResolver>();
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
-            //jwt认证配置
+            // JWT authentication
             builder.Services.AddAuthorization();
             builder.Services
     .AddAuthentication(options =>
@@ -81,6 +86,8 @@ namespace SIFS
     .AddJwtBearer("Bearer", options =>
     {
         var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+        if (jwtSettings == null || string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
+            throw new InvalidOperationException("Jwt:SecretKey is required. Configure Jwt__SecretKey in .env.");
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -113,6 +120,8 @@ namespace SIFS
     .AddJwtBearer("ExpiredAllowed", options =>
     {
         var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+        if (jwtSettings == null || string.IsNullOrWhiteSpace(jwtSettings.SecretKey))
+            throw new InvalidOperationException("Jwt:SecretKey is required. Configure Jwt__SecretKey in .env.");
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -131,18 +140,18 @@ namespace SIFS
 
             builder.Services.AddHttpContextAccessor();
 
-            //文件URL构建器配置
+            // File URL builder
             builder.Services.Configure<AppUrlOptions>(
                 builder.Configuration.GetSection("AppUrlOptions"));
             builder.Services.AddSingleton<IFileUrlBuilder, FileUrlBuilder>();
 
-            //数据库上下文注册
+            // Database context
             builder.Services.AddDbContext<SIFSContext>(options =>
             {
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
             });
     
-            //通用名称服务注册
+            // Conventional service registration
             builder.Services.Scan(scan => scan
                 .FromApplicationDependencies(dep => dep.FullName.StartsWith("SIFS"))
                 .AddClasses(classes =>
@@ -218,8 +227,3 @@ namespace SIFS
         }
     }
 }
-
-
-
-
-
