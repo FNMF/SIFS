@@ -24,6 +24,13 @@ docker compose up -d --build
 - 管理端：`http://localhost/admin/`
 - Swagger：`http://localhost/swagger/`
 
+Nginx 路径约定：
+
+```text
+/admin/                  管理端静态页面和前端路由
+/admin/dashboard/hub     管理端 Dashboard 实时通知 Hub
+```
+
 核心系统部署时，算法 API 被视为外部服务。Docker 初始化 SQL 默认写入：
 
 ```text

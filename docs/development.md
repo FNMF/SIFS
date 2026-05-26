@@ -40,6 +40,8 @@ Jwt__ExpiresMinutes=25
 AppUrlOptions__BaseUrl=http://localhost:5021
 ```
 
+`AppUrlOptions__BaseUrl` 用于生成前端和算法服务可访问的文件 URL。后端遇到 `localhost`、`127.0.0.1`、`::1` 这类本地绝对地址时，会按该配置改写域名和端口，避免 Docker 或远程部署时把不可访问的本机地址暴露出去。
+
 常用命令：
 
 ```powershell
@@ -70,7 +72,8 @@ npm run dev
 默认访问地址：
 
 - 用户端：`http://localhost:5173`
-- 管理端：`http://localhost:5174`
+- 管理端首页：`http://localhost:5174/admin/dashboard`
+- 管理端登录：`http://localhost:5174/admin/login`
 - 后端 Swagger：`http://localhost:5021/swagger`
 - FLDCF Health：`http://127.0.0.1:8000/health/fldcf`
 - FECDNet Health：`http://127.0.0.1:8001/health/fecdnet`

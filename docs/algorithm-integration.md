@@ -81,6 +81,8 @@ Content-Type: application/json
 | `algorithm` | string/null | 算法模型名称，来自 `algo_models.name`。 |
 | `user_id` | string/null | 用户 ID，使用无连字符的 GUID 字符串。算法不需要用户隔离时可以忽略。 |
 
+`image_url` 由后端根据文件路径和 `AppUrlOptions__BaseUrl` 生成。部署时请确保该地址能被算法服务访问；如果算法服务在 Docker 容器或远程机器中运行，不要把 `BaseUrl` 配成只对后端本机可访问的地址。
+
 ## 算法响应 DTO
 
 算法服务成功时必须返回 HTTP 2xx，并返回可被后端解析的 JSON。
