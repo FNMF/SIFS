@@ -12,8 +12,10 @@ import { tokenStorage } from '../utils/storage'
 
 const routes = [
   { path: '/', redirect: '/admin/dashboard' },
-  { path: '/login', name: 'login', component: Login },
-  { path: '/403', name: 'forbidden', component: Forbidden },
+  { path: '/login', redirect: '/admin/login' },
+  { path: '/403', redirect: '/admin/403' },
+  { path: '/admin/login', name: 'login', component: Login },
+  { path: '/admin/403', name: 'forbidden', component: Forbidden },
   { path: '/dashboard', redirect: '/admin/dashboard' },
   { path: '/admin/dashboard', name: 'dashboard', component: Dashboard, meta: { requiresAuth: true, requiredPermission: 'admin:access' } },
   { path: '/admin/algos', name: 'algos', component: AlgoManagement, meta: { requiresAuth: true, requiredPermission: 'algo:view' } },
@@ -32,7 +34,7 @@ router.beforeEach(async (to, from, next) => {
   const accessToken = tokenStorage.getAccessToken()
 
   if (to.meta.requiresAuth && !accessToken) {
-    next({ path: '/login', query: { redirect: to.fullPath } })
+    next({ path: '/admin/login', query: { redirect: to.fullPath } })
     return
   }
 
@@ -45,16 +47,16 @@ router.beforeEach(async (to, from, next) => {
       }
 
       if (!authStore.hasPermission(to.meta.requiredPermission)) {
-        next('/403')
+        next('/admin/403')
         return
       }
     } catch (error) {
       if (error.status === 401) {
         authStore.clearAuth()
-        next({ path: '/login', query: { redirect: to.fullPath } })
+        next({ path: '/admin/login', query: { redirect: to.fullPath } })
         return
       }
-      next('/403')
+      next('/admin/403')
       return
     }
   }

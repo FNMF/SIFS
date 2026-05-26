@@ -18,7 +18,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': 'http://localhost:5021',
-      '/admin': {
+      '/admin/dashboard/hub': {
         target: 'http://localhost:5021',
         ws: true
       }

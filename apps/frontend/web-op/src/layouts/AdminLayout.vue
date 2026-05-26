@@ -67,6 +67,6 @@ const visibleNavItems = computed(() => navItems.filter((item) => authStore.hasPe
 function logout() {
   authStore.clearAuth()
   ElMessage.success('已退出')
-  router.push('/login')
+  router.push('/admin/login')
 }
 </script>

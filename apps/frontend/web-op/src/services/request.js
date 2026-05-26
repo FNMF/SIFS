@@ -30,13 +30,13 @@ function redirectToLogin(authStore) {
     return
   }
 
-  if (window.location.pathname === '/login') {
+  if (window.location.pathname === '/admin/login') {
     return
   }
 
   const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}` || '/'
   hasRedirectedToLogin = true
-  window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+  window.location.href = `/admin/login?redirect=${encodeURIComponent(currentPath)}`
 }
 
 async function doRefreshToken() {

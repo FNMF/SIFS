@@ -52,7 +52,13 @@ function goHistory() {
 }
 
 function goAdmin() {
-  window.location.href = 'http://127.0.0.1:5174/admin/dashboard'
+  const { protocol, hostname, port } = window.location
+  if (port === '5173') {
+    window.location.href = `${protocol}//${hostname}:5174/admin/dashboard`
+    return
+  }
+
+  window.location.href = '/admin/dashboard'
 }
 
 function goTry() {

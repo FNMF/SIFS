@@ -65,7 +65,7 @@ async function handleLogin() {
     })
     setAuth(data)
     ElMessage.success('登录成功')
-    router.push(route.query.redirect || '/dashboard')
+    router.push(route.query.redirect || '/admin/dashboard')
   } finally {
     submitting.value = false
   }
