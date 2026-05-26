@@ -1,47 +1,7 @@
-# SIFS Docker Deployment
+# Docker
 
-## Start
+Docker 部署说明已统一移到：
 
-```powershell
-docker compose up -d --build
-```
+- [Docker 部署](../../docs/deployment.md)
 
-Default gateway:
-
-- User frontend: http://localhost/
-- Admin frontend: http://localhost/admin/
-- Swagger: http://localhost/swagger/
-
-Default dev accounts are inserted by `deploy/docker/mysql/init/99-dev-test-users.sql`:
-
-- `admin` / `Admin@123456`
-- `user` / `User@123456`
-
-Do not include `99-dev-test-users.sql` in production deployments.
-
-## Services
-
-- `nginx`: public reverse proxy.
-- `backend`: single SIFS backend process. It runs the API plus the in-process background workers, avoiding duplicate in-memory queues, recovery scans, and health checks before an external message queue is introduced.
-- `web`: user frontend static container.
-- `web-op`: admin frontend static container.
-- `mysql`: MySQL 8 database.
-- `fldcf-api`: FLDCF algorithm API.
-- `fecdnet-api`: FECDNet algorithm API.
-
-The backend and algorithm containers share the `app-data` volume mounted at `/data`.
-
-## Production Notes
-
-Set these environment variables before starting:
-
-```powershell
-$env:MYSQL_ROOT_PASSWORD="replace-me"
-$env:JWT_SECRET_KEY="replace-with-a-long-secret"
-$env:PUBLIC_BASE_URL="https://your-domain.example"
-$env:HTTP_PORT="80"
-$env:ALGO_TASK_WORKER_COUNT="2"
-$env:ALGO_TASK_QUEUE_CAPACITY="1000"
-```
-
-If the host does not have NVIDIA Container Toolkit installed, remove `gpus: all` from `fldcf-api` and `fecdnet-api`.
+本目录只保留 Dockerfile、Nginx 配置、MySQL 初始化 SQL 和 compose 扩展文件。
