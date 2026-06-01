@@ -208,9 +208,12 @@ namespace SIFS
                 RequestPath = "/data",
                 OnPrepareResponse = ctx =>
                 {
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "http://localhost:5173");
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Authorization");
+                    var origin = ctx.Context.Request.Headers.Origin.ToString();
+                    ctx.Context.Response.Headers["Access-Control-Allow-Origin"] =
+                        string.IsNullOrWhiteSpace(origin) ? "*" : origin;
+                    ctx.Context.Response.Headers["Vary"] = "Origin";
+                    ctx.Context.Response.Headers["Access-Control-Allow-Methods"] = "GET, OPTIONS";
+                    ctx.Context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
                 }
             });
 
